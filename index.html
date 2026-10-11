@@ -145,12 +145,14 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .chip.wide{font-family:var(--f-body)}
 .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
+.maploading{position:absolute;inset:0;z-index:2;display:flex;justify-content:center;align-items:flex-start;padding-top:22vh;background:var(--bg);color:var(--muted);font-weight:600;font-size:14px;transition:opacity .3s}
+.maploading.done{opacity:0;pointer-events:none}
 
 /* ---------- PHONE LAYOUT ---------- */
 #app[data-layout="phone"] .switch,#app[data-layout="phone"] .layout-label{display:none}
 #app[data-layout="phone"] .body{display:block}
 #app[data-layout="phone"] .mapwrap{position:absolute;inset:0}
-#app[data-layout="phone"] .sheet{position:absolute;left:0;right:0;bottom:0;border-right:0;border-radius:18px 18px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.15);height:46%;transition:height .25s ease}
+#app[data-layout="phone"] .sheet{position:absolute;left:0;right:0;bottom:0;border-right:0;border-radius:18px 18px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.15);height:52%;transition:height .25s ease}
 #app[data-layout="phone"] .sheet[data-state="full"]{height:88%}
 #app[data-layout="phone"] .sheet[data-state="mini"]{height:118px}
 #app[data-layout="phone"] .handle{display:flex;justify-content:center;padding:8px 0 2px;position:sticky;top:0;background:var(--panel);cursor:pointer;border:0;width:100%;z-index:2}
@@ -161,7 +163,13 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .bottomnav button .ico{font-size:18px;line-height:1}
 .bottomnav button[aria-pressed="true"]{color:var(--cool)}
 .bottomnav button.p[aria-pressed="true"]{color:var(--prem)}
-#app[data-layout="phone"] .bmaps{top:auto;bottom:calc(46% + 10px);flex-direction:row}
+#app[data-layout="phone"] .bmaps{top:auto;right:auto;left:10px;bottom:calc(52% + 10px);flex-direction:row;transition:bottom .25s ease}
+#app[data-layout="phone"] #sheet[data-state="mini"] ~ .mapwrap .bmaps{bottom:128px}
+#app[data-layout="phone"] #sheet[data-state="full"] ~ .mapwrap .bmaps{display:none}
+/* keep the ArcGIS zoom buttons above the bottom sheet */
+#app[data-layout="phone"] .esri-ui-bottom-right{bottom:calc(52% + 4px)!important;transition:bottom .25s ease}
+#app[data-layout="phone"] #sheet[data-state="mini"] ~ .mapwrap .esri-ui-bottom-right{bottom:122px!important}
+#app[data-layout="phone"] #sheet[data-state="full"] ~ .mapwrap .esri-ui-bottom-right{display:none}
 #app[data-layout="phone"] .wx{max-width:62%}
 /* phone preview frame on a big screen */
 #app.framed{width:400px;height:min(860px,calc(100% - 32px));margin:16px auto;border-radius:30px;overflow:hidden;border:9px solid #1b1f22;box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -334,11 +342,13 @@ body.framed-bg{background:#cfd8db}
         </section>
 
         <p class="note" data-i18n="note">Test build with sample data. Shelter and walkway locations are approximate; population, surface temperature and demand figures are made up. Basemap: Lands Department via ArcGIS Maps SDK. Weather: Hong Kong Observatory open data.</p>
+        <p class="note" style="border-top:0;padding-top:0;margin-top:-6px">Original idea &amp; app by <a href="https://github.com/Alison-lhc" target="_blank" rel="noopener" style="color:var(--cool)">@Alison-lhc</a> · 原創構思及開發：<a href="https://github.com/Alison-lhc" target="_blank" rel="noopener" style="color:var(--cool)">@Alison-lhc</a></p>
       </div>
     </aside>
 
     <div class="mapwrap">
       <div id="map"></div>
+      <div class="maploading" id="mapLoading"><span>Loading map…</span></div>
       <div class="wx" id="wx"><span class="where">…</span></div>
       <div class="bmaps" id="bmaps">
         <button data-b="hk" aria-pressed="true" data-i18n="bmHK">HK Map (LandsD)</button>
@@ -382,7 +392,7 @@ const T = {
   lgDesert:"> 10 min (desert)",deployTitle:"Where to deploy this week",rankTitle:"All neighbourhoods by priority",rankHint:"Score = at-risk people × walking minutes × surface heat. Tap to zoom.",
   note:"Test build with sample data. Shelter and walkway locations are approximate; population, surface temperature and demand figures are made up. Basemap: Lands Department via ArcGIS Maps SDK. Weather: Hong Kong Observatory open data.",
   bmHK:"HK Map (LandsD)",bmTopo:"Topographic",bmImg:"Imagery",navRoute:"Shaded route",navPrem:"Premium",
-  layoutAuto:"Auto view",layoutPhone:"📱 Phone view",layoutDesk:"💻 Computer view",
+  layoutAuto:"🖥 Layout: auto",layoutPhone:"📱 Layout: phone",layoutDesk:"💻 Layout: computer",
   allDistricts:"All districts",planCommunity:"Community plan",planPro:"Government Pro plan",
   proOnly:"Government Pro feature",upgradeMsg:"Upgrade to Government Pro to see where to deploy cooling units, view public demand and export reports.",upgrade:"Upgrade to Pro (demo)",
   exportBtn:"Export priority list (CSV)",unitCool:"Mobile cooling unit",unitWater:"Hydration station",at:"at",
@@ -419,7 +429,7 @@ const T = {
   lgDesert:"> 10 分鐘（沙漠）",deployTitle:"本週建議部署位置",rankTitle:"所有社區優先次序",rankHint:"分數 = 高風險人口 × 步行分鐘 × 地表溫度。按一下放大。",
   note:"測試版，使用示範數據。避暑點及行人通道位置為約數；人口、地表溫度及需求數字為虛構。底圖：地政總署（ArcGIS Maps SDK）。天氣：香港天文台開放數據。",
   bmHK:"香港地圖（地政總署）",bmTopo:"地形圖",bmImg:"衛星影像",navRoute:"陰涼路線",navPrem:"進階版",
-  layoutAuto:"自動",layoutPhone:"📱 手機版",layoutDesk:"💻 電腦版",
+  layoutAuto:"🖥 版面：自動",layoutPhone:"📱 版面：手機",layoutDesk:"💻 版面：電腦",
   allDistricts:"全部地區",planCommunity:"社區版計劃",planPro:"政府專業版計劃",
   proOnly:"政府專業版功能",upgradeMsg:"升級至政府專業版，即可查看降溫站部署建議、公眾需求數據及匯出報告。",upgrade:"升級至專業版（示範）",
   exportBtn:"匯出優先名單（CSV）",unitCool:"流動降溫站",unitWater:"補水站",at:"於",
@@ -615,6 +625,7 @@ function hk80ToWgs(E,N){
 // UI HELPERS
 // =====================================================================
 const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove("on"),2600)}
 function applyLang(){
@@ -629,7 +640,8 @@ function applyLang(){
 let layoutPref="auto"; try{layoutPref=localStorage.getItem("coolhk-layout")||"auto"}catch(e){}
 function applyLayout(){
   const app=$("app"), wide=window.innerWidth>760;
-  const L = layoutPref==="auto" ? (wide?"desktop":"phone") : layoutPref;
+  const L = (layoutPref==="auto"||!wide) ? (wide?"desktop":"phone") : layoutPref;
+  $("layoutBtn").hidden = !wide; // the layout switch only makes sense on a big screen
   app.dataset.layout=L;
   const framed = L==="phone" && wide;
   app.classList.toggle("framed",framed); document.body.classList.toggle("framed-bg",framed);
@@ -661,7 +673,7 @@ async function loadWeather(){
     WX={temps,rh,rhHQ,warn:code==="VHOT"?"vhot":code==="HOT"?"hot":"",live:true};
   }catch(e){
     const temps={},rh={}; STATIONS.forEach((s,i)=>{temps[s.en]=+(32+((i*37)%30)/10).toFixed(1);rh[s.en]=70+((i*13)%16)});
-    WX={temps,rh,rhHQ:76,warn:"vhot",live:false};
+    WX={temps,rh,rhHQ:76,warn:"",live:false};
   }
 }
 let wxPoint=[SAMPLE_START.lat,SAMPLE_START.lng];
@@ -700,7 +712,7 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
     constraints:{minZoom:10,maxZoom:19,snapToZoom:false},
     popup:{dockEnabled:false,dockOptions:{buttonEnabled:false}}});
   view.ui.move("zoom","bottom-right");
-  view.ui.remove("attribution"); // keep Lands Department credit in the panel note instead (small screens)
+  // keep the map attribution visible (required by the Esri / Lands Department terms)
 
   view.on("click",e=>{
     if(picking){ e.stopPropagation(); picking=false; $("pickBtn").setAttribute("aria-pressed","false");
@@ -710,7 +722,7 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
   reactiveUtils.when(()=>view.stationary,()=>{ if(version==="premium"&&view.center) renderWeather([view.center.latitude,view.center.longitude]); });
 
   drawShade(); drawShelters(); drawCatch(); drawMTR();
-  view.when(()=>{ show("public"); checkHKTiles(); });
+  view.when(()=>{ $("mapLoading").classList.add("done"); show("public"); checkHKTiles(); });
 });
 
 function makeBasemap(id){
@@ -894,7 +906,7 @@ function renderSugg(field){
   const groups=localSuggest(inp.value,field); if(st.remote.length) groups.push({hdr:t("hdrSearch"),items:st.remote});
   st.items=groups.flatMap(g=>g.items); let i=0;
   box.innerHTML = st.items.length ? groups.filter(g=>g.items.length).map(g=>(g.hdr?`<div class="hdr">${g.hdr}</div>`:"")+g.items.map(it=>
-    `<button type="button" class="si${i===st.idx?" on":""}" role="option" data-k="${i++}">${it.icon}<span><span class="l1">${it.label}</span>${it.sub?`<br><span class="l2">${it.sub}</span>`:""}</span></button>`).join("")).join("")
+    `<button type="button" class="si${i===st.idx?" on":""}" role="option" data-k="${i++}">${it.icon}<span><span class="l1">${esc(it.label)}</span>${it.sub?`<br><span class="l2">${esc(it.sub)}</span>`:""}</span></button>`).join("")).join("")
     : `<div class="hdr" style="text-transform:none;letter-spacing:0">${t("noSugg")}</div>`;
   box.hidden=false;
 }
@@ -931,7 +943,7 @@ function renderExitRow(field,st,ref){
 function refreshExitRows(){["start","dest"].forEach(f=>{const row=$(f+"Exits");if(row._st){const s=$(f+"In")._sel;renderExitRow(f,row._st,s&&s.kind==="exit"?s.ref:null)}})}
 ["start","dest"].forEach(field=>{
   const inp=$(field+"In"), box=$(field+"Sugg"), st=SUG[field];
-  inp.addEventListener("focus",()=>{st.idx=-1;renderSugg(field)});
+  inp.addEventListener("focus",()=>{st.idx=-1;sheetTo("full");renderSugg(field)});
   inp.addEventListener("input",()=>{inp._sel=null;if(field==="start")startPoint=null;renderExitRow(field,null);st.idx=-1;st.remote=[];renderSugg(field);remoteSearch(field)});
   inp.addEventListener("keydown",e=>{
     if(box.hidden) return;
@@ -1134,7 +1146,7 @@ function syncLayers(){
 }
 function subscribe(n){ tier=n; try{localStorage.setItem("coolhk-tier",n)}catch(e){}; toast(t("subscribed",n===2?t("p2Name"):t("p1Name"))); renderPremium(); }
 document.querySelectorAll("[data-tier]").forEach(b=>b.onclick=()=>subscribe(+b.dataset.tier));
-$("managePlan").onclick=()=>{tier=0;try{localStorage.setItem("coolhk-tier",0)}catch(e){};renderPremium()};
+$("managePlan").onclick=()=>{if(!confirm(lang==="zh"?"要取消目前方案，返回方案選擇嗎？":"Cancel your current plan and go back to the plan list?"))return;tier=0;try{localStorage.setItem("coolhk-tier",0)}catch(e){};renderPremium()};
 $("district").onchange=renderPremium;
 ["lyCatch","lyLst","lyShade","lyDemand"].forEach(id=>$(id).onchange=syncLayers);
 $("grp").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;group=b.dataset.g;document.querySelectorAll("#grp button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderPremium()});
@@ -1154,7 +1166,7 @@ function show(v){
   const pub=v==="public";
   layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true;
   ["lst","catch","demand","areas","deploy"].forEach(k=>layers[k].visible=!pub);
-  if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); else findRoute(); }
+  if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); }
   else { renderPremium(); }
   sheetTo("peek");
 }
@@ -1164,6 +1176,7 @@ document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v)
 // START
 // =====================================================================
 applyLayout(); applyLang();
+$("mapLoading").firstChild.textContent = lang==="zh"?"地圖載入中…":"Loading map…";
 loadWeather().then(()=>renderWeather());
 loadExits();
 </script>
