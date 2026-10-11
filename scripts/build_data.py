@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Build static map data for CoolHK.
 
-Downloads the real MTR track shapes from OpenStreetMap (Overpass API), simplifies them
-and writes data/mtr_lines.geojson, which the website loads instead of drawing straight
-lines between stations. GitHub Actions runs this every week (.github/workflows/update-data.yml).
+Downloads from OpenStreetMap (Overpass API), simplifies and writes:
+  data/mtr_lines.geojson  real MTR track shapes (instead of straight lines between stations)
+  data/shade.geojson      covered walkways, covered footbridges, pedestrian subways and indoor links
+
+GitHub Actions runs this every week (.github/workflows/update-data.yml).
 
 Uses only the Python standard library. If OpenStreetMap is busy or returns too little,
 the script stops without touching the existing data file, so the website keeps working.
@@ -29,7 +31,18 @@ QUERY = (
     'out geom;'
 )
 TOLERANCE = 0.00003  # about 3 m: keeps curves, drops redundant points
-OUT = pathlib.Path(__file__).resolve().parent.parent / "data" / "mtr_lines.geojson"
+DATA = pathlib.Path(__file__).resolve().parent.parent / "data"
+OUT = DATA / "mtr_lines.geojson"
+SHADE_OUT = DATA / "shade.geojson"
+WALK = "footway|pedestrian|path|steps|corridor"
+SHADE_QUERY = (
+    "[out:json][timeout:240];("
+    f'way["highway"~"^({WALK})$"]["covered"~"^(yes|arcade|colonnade|roof)$"]({BBOX});'
+    f'way["highway"~"^({WALK})$"]["tunnel"~"^(yes|building_passage)$"]({BBOX});'
+    f'way["highway"="corridor"]({BBOX});'
+    ");out geom;"
+)
+MIN_LENGTH_M = 10  # drop tiny scraps
 
 
 def overpass(query):
@@ -92,20 +105,75 @@ def build(data):
     return features
 
 
-def main():
+def length_m(pts):
+    """Approximate length in metres of a [(lon, lat), ...] line in Hong Kong."""
+    kx, ky = 111320 * math.cos(math.radians(22.32)), 110540
+    return sum(math.hypot((x2 - x1) * kx, (y2 - y1) * ky) for (x1, y1), (x2, y2) in zip(pts, pts[1:]))
+
+
+def build_shade(data):
+    """Covered or indoor walking links. kind = "indoor" for subways and corridors, else "covered"."""
+    features, seen = [], set()
+    for way in data.get("elements", []):
+        if way.get("type") != "way" or way["id"] in seen or not way.get("geometry"):
+            continue
+        seen.add(way["id"])
+        tags = way.get("tags", {})
+        pts = [(p["lon"], p["lat"]) for p in way["geometry"] if p]
+        if len(pts) < 2 or length_m(pts) < MIN_LENGTH_M:
+            continue
+        indoor = tags.get("highway") == "corridor" or tags.get("tunnel") in ("yes", "building_passage") or tags.get("indoor") in ("yes", "corridor")
+        props = {"kind": "indoor" if indoor else "covered"}
+        en, zh = tags.get("name:en") or "", tags.get("name:zh") or tags.get("name:zh-Hant") or ""
+        if not en and tags.get("name", "").isascii():
+            en = tags.get("name", "")
+        elif not zh and tags.get("name"):
+            zh = tags["name"]
+        if en:
+            props["en"] = en
+        if zh:
+            props["zh"] = zh
+        coords = [[round(x, 5), round(y, 5)] for x, y in simplify(pts, TOLERANCE * 0.7)]
+        features.append({"type": "Feature", "properties": props, "geometry": {"type": "LineString", "coordinates": coords}})
+    return features
+
+
+def write(path, features, label):
+    path.parent.mkdir(exist_ok=True)
+    geojson = {"type": "FeatureCollection", "attribution": "© OpenStreetMap contributors, ODbL 1.0", "features": features}
+    path.write_text(json.dumps(geojson, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    print(f"Wrote {path.relative_to(DATA.parent)}: {len(features)} {label}, {path.stat().st_size // 1024} KB")
+
+
+def update_mtr():
     print("Downloading MTR lines from OpenStreetMap…")
     features = build(overpass(QUERY))
     found = {f["properties"]["ref"] for f in features}
     if len(found) < 8:
-        sys.exit(f"Only found {sorted(found)}; keeping the existing data file.")
-    OUT.parent.mkdir(exist_ok=True)
-    geojson = {"type": "FeatureCollection",
-               "attribution": "© OpenStreetMap contributors, ODbL 1.0",
-               "features": features}
-    OUT.write_text(json.dumps(geojson, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
-    n_paths = sum(len(f["geometry"]["coordinates"]) for f in features)
-    print(f"Wrote {OUT.relative_to(OUT.parent.parent)}: {len(features)} lines, {n_paths} track pieces, "
-          f"{OUT.stat().st_size // 1024} KB. Missing: {sorted(LINE_CODES - found) or 'none'}")
+        sys.exit(f"Only found {sorted(found)}; keeping the existing MTR file.")
+    write(OUT, features, f"MTR lines (missing: {sorted(LINE_CODES - found) or 'none'})")
+
+
+def update_shade():
+    print("Downloading covered walkways from OpenStreetMap…")
+    features = build_shade(overpass(SHADE_QUERY))
+    if len(features) < 200:
+        sys.exit(f"Only found {len(features)} covered links; keeping the existing shade file.")
+    kinds = {k: sum(f["properties"]["kind"] == k for f in features) for k in ("covered", "indoor")}
+    write(SHADE_OUT, features, f"covered/indoor links {kinds}")
+
+
+def main():
+    """Each dataset is independent: if one download fails, the other is still updated."""
+    done = 0
+    for step in (update_mtr, update_shade):
+        try:
+            step()
+            done += 1
+        except SystemExit as err:
+            print(f"  skipped: {err}", file=sys.stderr)
+    if not done:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
