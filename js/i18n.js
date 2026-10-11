@@ -4,8 +4,8 @@
 const CONFIG = {
   PORTAL_URL: "https://hkugeog.maps.arcgis.com", // your HKU ArcGIS Online org
   WEBMAP_ID: "",        // optional: item ID of a web map you saved in ArcGIS Online. If set, the app opens that map (its basemap + layers)
-  ARCGIS_API_KEY: "",   // optional: only needed for paid ArcGIS services (routing, geocoding at scale)
-  GOOGLE_MAPS_API_KEY: "" // optional: paste a Google Maps Platform key (Places API New enabled) to add Google place search
+  // Free services only: no paid API keys and nothing that uses credits.
+  // (Paid ArcGIS services and Google Places were removed on purpose; do not add keys here.)
 };
 
 // =====================================================================
@@ -23,7 +23,7 @@ const T = {
   stShel:"cool shelters",stOut:"at-risk people outside 10 min",stDes:"desert areas",layers:"Map layers",lyCatch:"5 / 10-min walk catchments",lyLst:"Surface heat hotspots (Landsat)",lyShade:"Covered walkways",lyDemand:"Public app demand (anonymised)",
   lgDesert:"> 10 min (desert)",deployTitle:"Where to deploy this week",rankTitle:"All neighbourhoods by priority",rankHint:"Score = at-risk people × walking minutes × surface heat. Tap to zoom.",
   note:"Test build with sample data. Shelter and walkway locations are approximate; population, surface temperature and demand figures are made up. Basemap: Lands Department via ArcGIS Maps SDK. Weather: Hong Kong Observatory open data.",
-  bmHK:"HK Map (LandsD)",bmTopo:"Topographic",bmImg:"Imagery",navRoute:"Shaded route",navPrem:"Premium",
+  bmHK:"HK Map (LandsD)",bmTopo:"OpenStreetMap",bmImg:"Aerial photo (LandsD)",navRoute:"Shaded route",navPrem:"Premium",
   layoutAuto:"🖥 Layout: auto",layoutPhone:"📱 Layout: phone",layoutDesk:"💻 Layout: computer",
   allDistricts:"All districts",planCommunity:"Community plan",planPro:"Government Pro plan",
   proOnly:"Government Pro feature",upgradeMsg:"Upgrade to Government Pro to see where to deploy cooling units, view public demand and export reports.",upgrade:"Upgrade to Pro (demo)",
@@ -60,7 +60,7 @@ const T = {
   stShel:"避暑點",stOut:"10 分鐘範圍外的高風險人口",stDes:"避暑沙漠",layers:"地圖圖層",lyCatch:"5／10 分鐘步行範圍",lyLst:"地表熱點（Landsat）",lyShade:"有蓋行人通道",lyDemand:"公眾版需求（匿名）",
   lgDesert:"> 10 分鐘（沙漠）",deployTitle:"本週建議部署位置",rankTitle:"所有社區優先次序",rankHint:"分數 = 高風險人口 × 步行分鐘 × 地表溫度。按一下放大。",
   note:"測試版，使用示範數據。避暑點及行人通道位置為約數；人口、地表溫度及需求數字為虛構。底圖：地政總署（ArcGIS Maps SDK）。天氣：香港天文台開放數據。",
-  bmHK:"香港地圖（地政總署）",bmTopo:"地形圖",bmImg:"衛星影像",navRoute:"陰涼路線",navPrem:"進階版",
+  bmHK:"香港地圖（地政總署）",bmTopo:"OpenStreetMap",bmImg:"航空照片（地政總署）",navRoute:"陰涼路線",navPrem:"進階版",
   layoutAuto:"🖥 版面：自動",layoutPhone:"📱 版面：手機",layoutDesk:"💻 版面：電腦",
   allDistricts:"全部地區",planCommunity:"社區版計劃",planPro:"政府專業版計劃",
   proOnly:"政府專業版功能",upgradeMsg:"升級至政府專業版，即可查看降溫站部署建議、公眾需求數據及匯出報告。",upgrade:"升級至專業版（示範）",
