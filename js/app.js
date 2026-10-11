@@ -164,8 +164,10 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
 
   const map = CONFIG.WEBMAP_ID ? new WebMap({portalItem:{id:CONFIG.WEBMAP_ID}}) : new EsriMap({basemap:makeBasemap("hk")});
   ["lst","catch","walk","demand","areas","shade","shelters","mtr","mtrst","mtrlab","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
-  layers.mtrst.minScale=150000; // station dots from district level
+  // show detail step by step as the user zooms in, so the overview map is not covered in dots
+  layers.mtrst.minScale=40000; // station dots only when zoomed in
   layers.mtrlab.minScale=20000; // station names only at street level
+  layers.walk.minScale=40000; // walk areas only when zoomed in (otherwise the circles pile up)
   map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.mtrst,layers.mtrlab,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
 
   view = new MapView({container:"map",map,center:[114.18,22.30],zoom:13,
@@ -229,7 +231,7 @@ function drawShade(){
 }
 function drawShelters(){
   layers.shelters.removeAll();
-  SHELTERS.forEach(s=>layers.shelters.add(dot(s.lat,s.lng,css("--cool"),12,{title:nm(s),content:`${lang==="zh"?TYPE[s.type]:s.type} · ${lang==="zh"?D[s.dist]:s.dist}<br>${t("freeAccess")}`})));
+  SHELTERS.forEach(s=>layers.shelters.add(dot(s.lat,s.lng,css("--cool"),10,{title:nm(s),content:`${lang==="zh"?TYPE[s.type]:s.type} · ${lang==="zh"?D[s.dist]:s.dist}<br>${t("freeAccess")}`})));
 }
 function drawCatch(){
   layers.catch.removeAll(); const c=css("--cool");
