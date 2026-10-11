@@ -45,7 +45,7 @@ const T = {
   freeAccess:"Air-conditioned, free to enter",walk:"Walk",desert:"Cool Island Desert",nearest:"Nearest shelter",surf:"Surface temp",
   subscribed:p=>`Subscribed to ${p} (demo)`,catchNote:"Shaded rings: 5 / 10-min walk",
   deployTag:i=>i===0?"Mobile cooling unit":"Hydration station",
-  lgMtr:"MTR lines",lyrBtn:"🗂 Layers",lyCovered:"Covered walkways & footbridges",lyTrees:"Tree-lined streets",lyShelters:"Cool shelters",lyWalk:"5 / 10-min walk to a shelter",lyMtr:"MTR lines",useMyLoc:"Use my current location",nearestOpt:"Nearest cool shelter",hdrNearMtr:"Nearby MTR stations",hdrNearShel:"Nearby cool shelters",
+  lgMtr:"MTR lines & stations",lyrBtn:"🗂 Layers",lyCovered:"Covered walkways & footbridges",lyTrees:"Tree-lined streets",lyShelters:"Cool shelters",lyWalk:"5 / 10-min walk to a shelter",lyMtr:"MTR lines & stations",useMyLoc:"Use my current location",nearestOpt:"Nearest cool shelter",hdrNearMtr:"Nearby MTR stations",hdrNearShel:"Nearby cool shelters",
   hdrMtr:"MTR stations",hdrExits:"Station exits",hdrPlaces:"Places",hdrSearch:"Addresses & places",exit:"Exit",stCentre:"Station centre",chooseExit:"Exit:",
   exitsLoading:"Loading exits…",exitsNone:"Exit locations need an internet connection.",stSuf:" Station",exitLabel:(st,r)=>`${st} Station · Exit ${r}`,
   linesLbl:"Lines",exitsLbl:"Exits",typeShelter:"Cool shelter",typeArea:"Neighbourhood",noSugg:"No matches yet. Keep typing or press Find.",hdrAddr:"Addresses",hdrGoogle:"Google Maps places",srcALS:"HK address lookup",srcGeo:"HK GeoInfo Map",openGmaps:"Open walking directions in Google Maps"},
@@ -82,7 +82,7 @@ const T = {
   freeAccess:"有冷氣，免費進入",walk:"步行",desert:"避暑沙漠",nearest:"最近避暑點",surf:"地表溫度",
   subscribed:p=>`已訂閱${p}（示範）`,catchNote:"陰影圈：5／10 分鐘步行範圍",
   deployTag:i=>i===0?"流動降溫站":"補水站",
-  lgMtr:"港鐵綫",lyrBtn:"🗂 圖層",lyCovered:"有蓋行人道及天橋",lyTrees:"樹蔭街道",lyShelters:"避暑點",lyWalk:"避暑點 5 / 10 分鐘步行範圍",lyMtr:"港鐵綫",useMyLoc:"使用我目前的位置",nearestOpt:"最近的避暑點",hdrNearMtr:"附近港鐵站",hdrNearShel:"附近避暑點",
+  lgMtr:"港鐵綫及車站",lyrBtn:"🗂 圖層",lyCovered:"有蓋行人道及天橋",lyTrees:"樹蔭街道",lyShelters:"避暑點",lyWalk:"避暑點 5 / 10 分鐘步行範圍",lyMtr:"港鐵綫及車站",useMyLoc:"使用我目前的位置",nearestOpt:"最近的避暑點",hdrNearMtr:"附近港鐵站",hdrNearShel:"附近避暑點",
   hdrMtr:"港鐵站",hdrExits:"車站出口",hdrPlaces:"地點",hdrSearch:"地址及地點",exit:"出口",stCentre:"車站中心",chooseExit:"出口：",
   exitsLoading:"正在載入出口…",exitsNone:"需要上網才能顯示出口位置。",stSuf:"站",exitLabel:(st,r)=>`${st}站 ${r} 出口`,
   linesLbl:"路綫",exitsLbl:"出口",typeShelter:"避暑點",typeArea:"社區",noSugg:"暫時未有結果，繼續輸入或按「搵最陰涼路線」。",hdrAddr:"地址",hdrGoogle:"Google 地圖地點",srcALS:"香港地址查詢",srcGeo:"地理資訊地圖",openGmaps:"在 Google 地圖開啟步行路線"}
