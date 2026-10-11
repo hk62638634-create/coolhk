@@ -14,7 +14,7 @@
 :root{
   --bg:#eef3f4; --panel:#ffffff; --ink:#132a33; --muted:#5b707a; --line:#d8e2e6;
   --cool:#0f7c8c; --cool-soft:#d6eef1; --shade:#1f9d6b; --tree:#6aa84f; --heat:#d9480f; --heat-soft:#fde4d6;
-  --warn:#e8a317; --ok:#2f8f5b; --sun:#9aa7ad; --prem:#7a4fbf; --prem-soft:#ece4f7;
+  --warn:#e8a317; --ok:#2f8f5b; --sun:#9aa7ad; --prem:#7a4fbf; --prem-soft:#ece4f7; --sunroute:#f08c00; --rain:#2f6fd6; --wet:#8a99a3;
   --f-display:"Bricolage Grotesque","Noto Sans TC",ui-sans-serif,system-ui,sans-serif;
   --f-body:"Figtree","Noto Sans TC",ui-sans-serif,system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -120,6 +120,12 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .seg{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
 .seg button{font-weight:700;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer}
 .seg button[aria-pressed="true"]{border-color:var(--prem);color:var(--prem);background:var(--prem-soft)}
+.seg.mode{margin-top:0;flex-wrap:nowrap}
+.seg.mode button{flex:1;font-size:14px;padding:9px 10px}
+.seg.mode button[data-m="sun"][aria-pressed="true"]{border-color:var(--sunroute);color:#9a5300;background:#fff1dc}
+.seg.mode button[data-m="rain"][aria-pressed="true"]{border-color:var(--rain);color:var(--rain);background:#e4eefc}
+#app.rain .bar i{background:var(--rain)}
+#app.rain .rcard:not(.fast)[aria-pressed="true"]{border-color:var(--rain);box-shadow:inset 0 0 0 1px var(--rain)}
 .checks{display:flex;flex-direction:column;gap:8px;font-size:14px;margin-top:6px}
 .checks label{display:flex;gap:8px;align-items:center;cursor:pointer}
 .checks .lock{font-size:11px;color:var(--prem);font-weight:700}
@@ -198,9 +204,10 @@ body.framed-bg{background:#cfd8db}
         <!-- ============ PUBLIC ============ -->
         <section id="panel-public" style="display:flex;flex-direction:column;gap:14px">
           <div>
-            <h2 data-i18n="pubTitle">Walk in the shade</h2>
+            <h2 id="pubTitleEl" data-i18n="pubTitle">Walk in the shade</h2>
             <p class="hint" data-i18n="pubHint">Type where you're going. Leave the start empty to use your current location.</p>
           </div>
+          <div class="seg mode" id="modeSeg" role="group" aria-label="Weather"><button type="button" data-m="sun" aria-pressed="true" data-i18n="modeSun">☀️ Sunny</button><button type="button" data-m="rain" aria-pressed="false" data-i18n="modeRain">🌧 Rainy</button></div>
           <div id="heatAlert"></div>
           <form class="trip" id="tripForm" autocomplete="off">
             <span class="dot" style="background:var(--heat)"></span>
@@ -210,13 +217,13 @@ body.framed-bg{background:#cfd8db}
             <span class="dot" style="background:var(--cool)"></span>
             <div class="field"><input id="destIn" data-i18n-ph="destPh" placeholder="Destination: nearest cool shelter" role="combobox" aria-autocomplete="list" aria-controls="destSugg"><div class="sugg" id="destSugg" role="listbox" hidden></div><div class="exitrow" id="destExits"></div></div>
             <button type="button" class="mini" id="swapBtn" title="Swap">⇅</button>
-            <button class="btn" type="submit" style="grid-column:1/-1" data-i18n="go">Find shaded route</button>
+            <button class="btn" type="submit" id="goBtn" style="grid-column:1/-1" data-i18n="go">Find shaded route</button>
           </form>
           <div class="status" id="status"></div>
           <a class="btn ghost small" id="gmapsLink" href="#" target="_blank" rel="noopener" hidden style="text-align:center;text-decoration:none" data-i18n="openGmaps">Open walking directions in Google Maps</a>
           <div class="routes" id="routes" hidden>
             <button class="rcard" id="rcShade" aria-pressed="true">
-              <span class="k" style="color:var(--shade)" data-i18n="mostShaded">Most shaded</span>
+              <span class="k" id="mostLbl" style="color:var(--shade)" data-i18n="mostShaded">Most shaded</span>
               <span class="v" id="shMin">–</span>
               <span class="bar"><i id="shBar"></i></span>
               <span class="s" id="shSub"></span>
@@ -239,6 +246,8 @@ body.framed-bg{background:#cfd8db}
           <div class="legend">
             <span><i class="ln" style="background:var(--shade)"></i><span data-i18n="lgCovered">Covered walkway / footbridge</span></span>
             <span><i class="ln" style="background:var(--tree)"></i><span data-i18n="lgTrees">Tree-lined street</span></span>
+            <span><i class="ln" id="lgRSi" style="background:var(--shade);height:6px"></i><span id="lgRSt" data-i18n="lgRouteShade">Route: in shade</span></span>
+            <span><i class="ln" id="lgRXi" style="background:var(--sunroute);height:6px"></i><span id="lgRXt" data-i18n="lgRouteSun">Route: in the sun</span></span>
             <span><i style="background:var(--cool)"></i><span data-i18n="lgShelter">Cool shelter (air-con)</span></span>
             <span><i style="background:#fff;border:2px solid #E2231A;box-sizing:border-box"></i><span data-i18n="lgMtr">MTR station</span></span>
           </div>
@@ -382,7 +391,7 @@ const CONFIG = {
 const T = {
  en:{tabPublic:"Public · Free",tabPremium:"Premium",pubTitle:"Walk in the shade",pubHint:"Type where you're going. Leave the start empty to use your current location.",
   startPh:"Start: your current location",destPh:"Destination: nearest cool shelter",pick:"Pick on map",go:"Find shaded route",mostShaded:"Most shaded",fastest:"Fastest",
-  shadeOnRoute:"Shade on this route",otherShelters:"Other cool shelters nearby",lgCovered:"Covered walkway / footbridge",lgTrees:"Tree-lined street",lgShelter:"Cool shelter (air-con)",
+  shadeOnRoute:"Shade on this route",otherShelters:"Other cool shelters nearby",lgCovered:"Covered walkway / footbridge",lgTrees:"Tree-lined street",lgShelter:"Cool shelter (air-con)",lgRouteShade:"Route: in shade",lgRouteSun:"Route: in the sun",
   premFor:"For government departments & NGOs",plansTitle:"Choose a Premium plan",plansHint:"The public app stays free. Premium plans pay for heat-vulnerability analytics and services. Prices are proposals for the demo.",
   p1Name:"Community",perYear:"/ year",p1a:"Heat Vulnerability Dashboard",p1b:"Census layers: aged 65+ and under 15",p1c:"Surface heat hotspots and walk catchments",p1d:"District filter and priority ranking",
   subscribe:"Subscribe (demo)",popular:"Most chosen by departments",p2Name:"Government Pro",p2a:"Everything in Community",p2b:"Anonymised demand from public app users",p2c:"Where to deploy cooling units and water stations",p2d:"Heat-warning alerts for your districts",p2e:"Export reports (CSV)",
@@ -397,7 +406,7 @@ const T = {
   proOnly:"Government Pro feature",upgradeMsg:"Upgrade to Government Pro to see where to deploy cooling units, view public demand and export reports.",upgrade:"Upgrade to Pro (demo)",
   exportBtn:"Export priority list (CSV)",unitCool:"Mobile cooling unit",unitWater:"Hydration station",at:"at",
   deployLine:(n,m,s,t)=>`${n} at-risk people · ${m} min from ${s} · surface ${t}°C`,noDesert:"No desert areas in this district.",
-  atRisk:"at risk",score:"score",min:"min",shaded:"shaded",inSun:"min in sun",
+  atRisk:"at risk",score:"score",min:"min",shaded:"shaded",inSun:"min in sun",covered:"covered",inRain:"min in the rain",modeSun:"☀️ Sunny",modeRain:"🌧 Rainy",pubTitleRain:"Stay dry on your walk",goRain:"Find the driest route",mostCovered:"Most covered",lgRouteDry:"Route: covered",lgRouteWet:"Route: in the rain",sameRouteRain:"The fastest route already uses the covered walkways nearby, so it is also the driest.",noShadeRain:"No covered walkway lies along this trip, so you will be in the rain for most of it.",shadeBetterRain:(x,s)=>`The covered route takes ${x} min longer but saves ${s} min in the rain.`,
   locating:"Finding your location…",searching:"Searching…",routing:"Finding the shadiest way…",
   noGeo:"Couldn't get your location, so we used a sample start at Victoria Park. Type a start point to change it.",
   notFound:q=>`Couldn't find "${q}". Try a building, MTR station or street name.`,
@@ -419,7 +428,7 @@ const T = {
   linesLbl:"Lines",exitsLbl:"Exits",typeShelter:"Cool shelter",typeArea:"Neighbourhood",noSugg:"No matches yet. Keep typing or press Find.",hdrAddr:"Addresses",hdrGoogle:"Google Maps places",srcALS:"HK address lookup",srcGeo:"HK GeoInfo Map",openGmaps:"Open walking directions in Google Maps"},
  zh:{tabPublic:"公眾版 · 免費",tabPremium:"進階版",pubTitle:"行陰涼路線",pubHint:"輸入目的地。起點留空即使用你目前的位置。",
   startPh:"起點：你目前的位置",destPh:"目的地：最近的避暑點",pick:"在地圖上揀",go:"搵最陰涼路線",mostShaded:"最陰涼",fastest:"最快",
-  shadeOnRoute:"路線上的遮蔭",otherShelters:"附近其他避暑點",lgCovered:"有蓋行人通道／天橋",lgTrees:"林蔭街道",lgShelter:"避暑點（有冷氣）",
+  shadeOnRoute:"路線上的遮蔭",otherShelters:"附近其他避暑點",lgCovered:"有蓋行人通道／天橋",lgTrees:"林蔭街道",lgShelter:"避暑點（有冷氣）",lgRouteShade:"路線：有遮蔭",lgRouteSun:"路線：日曬",
   premFor:"適用於政府部門及非政府機構",plansTitle:"選擇進階版計劃",plansHint:"公眾版永遠免費。進階版計劃收費提供熱風險分析及服務。價錢為示範用建議。",
   p1Name:"社區版",perYear:"／年",p1a:"地區熱風險儀表板",p1b:"人口普查圖層：65歲或以上及15歲以下",p1c:"地表熱點及步行範圍",p1d:"地區篩選及優先排序",
   subscribe:"訂閱（示範）",popular:"最多部門選用",p2Name:"政府專業版",p2a:"包括社區版所有功能",p2b:"公眾版用戶的匿名需求數據",p2c:"建議流動降溫站及補水站位置",p2d:"按地區發出酷熱警告提示",p2e:"匯出報告（CSV）",
@@ -434,7 +443,7 @@ const T = {
   proOnly:"政府專業版功能",upgradeMsg:"升級至政府專業版，即可查看降溫站部署建議、公眾需求數據及匯出報告。",upgrade:"升級至專業版（示範）",
   exportBtn:"匯出優先名單（CSV）",unitCool:"流動降溫站",unitWater:"補水站",at:"於",
   deployLine:(n,m,s,t)=>`${n} 名高風險人士 · 距${s} ${m} 分鐘 · 地表 ${t}°C`,noDesert:"此地區沒有避暑沙漠。",
-  atRisk:"高風險",score:"分數",min:"分鐘",shaded:"有遮蔭",inSun:"分鐘曬太陽",
+  atRisk:"高風險",score:"分數",min:"分鐘",shaded:"有遮蔭",inSun:"分鐘曬太陽",covered:"有上蓋",inRain:"分鐘淋雨",modeSun:"☀️ 晴天",modeRain:"🌧 落雨",pubTitleRain:"行有瓦遮頭路線",goRain:"搵最少淋雨路線",mostCovered:"最多上蓋",lgRouteDry:"路線：有上蓋",lgRouteWet:"路線：會淋雨",sameRouteRain:"最快路線已經用到附近的有蓋通道，所以亦是最少淋雨的路線。",noShadeRain:"此行程沿途沒有有蓋通道，大部分路段都會淋雨。",shadeBetterRain:(x,s)=>`有蓋路線多行 ${x} 分鐘，但少淋 ${s} 分鐘雨。`,
   locating:"正在取得你的位置…",searching:"搜尋中…",routing:"正在搵最陰涼的路…",
   noGeo:"未能取得你的位置，已用維多利亞公園作示範起點。輸入起點即可更改。",
   notFound:q=>`搵唔到「${q}」。試吓輸入大廈、港鐵站或街道名稱。`,
@@ -595,15 +604,24 @@ function shadeStats(coords){
   let tot=0,sh=0;const used=new Set();
   for(let i=0;i<coords.length-1;i++){
     const a=coords[i],b=coords[i+1],L=dist(a,b),m=[(a[0]+b[0])/2,(a[1]+b[1])/2];tot+=L;let hit=false;
-    SHADE.forEach((s,k)=>{if(lineDist(m,s.pts)<35){hit=true;used.add(k)}});
-    if(!hit&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))hit=true;
+    SHADE.forEach((s,k)=>{if(coversNow(s)&&lineDist(m,s.pts)<35){hit=true;used.add(k)}});
+    if(!hit&&mode!=="rain"&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))hit=true;
     if(hit)sh+=L;
   }
   return{tot,sh,pct:tot?sh/tot:0,used:[...used]};
 }
+// weather setting: "sun" (avoid the sun) or "rain" (stay dry). Trees give shade but no rain cover.
+let mode="sun"; try{mode=localStorage.getItem("coolhk-mode")==="rain"?"rain":"sun"}catch(e){}
+const coversNow=s=>mode!=="rain"||s.kind!=="trees";
+const coveredCol=()=>css(mode==="rain"?"--rain":"--shade"), exposedCol=()=>css(mode==="rain"?"--wet":"--sunroute");
+const tm=k=>mode==="rain"?k+"Rain":k;
+// is this stretch of the route covered? (same test as shadeStats)
+function segShaded(a,b){const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];return SHADE.some(s=>coversNow(s)&&lineDist(m,s.pts)<35)||(mode!=="rain"&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))}
+// split a route into continuous shaded / sunny runs
+function shadeRuns(coords){const runs=[];for(let i=0;i<coords.length-1;i++){const sh=segShaded(coords[i],coords[i+1]),last=runs.at(-1);if(last&&last.shaded===sh)last.pts.push(coords[i+1]);else runs.push({shaded:sh,pts:[coords[i],coords[i+1]]})}return runs}
 function shadeWaypoints(a,b){
   const AB=dist(a,b),corr=Math.max(250,AB*.35),c=[];
-  SHADE.forEach((s,k)=>{const f=s.pts[0],l=s.pts.at(-1),pf=along(f,a,b),pl=along(l,a,b),pm=along(s.pts[Math.floor(s.pts.length/2)],a,b);
+  SHADE.forEach((s,k)=>{if(!coversNow(s))return;const f=s.pts[0],l=s.pts.at(-1),pf=along(f,a,b),pl=along(l,a,b),pm=along(s.pts[Math.floor(s.pts.length/2)],a,b);
     if(pm.s>-.1&&pm.s<1.1&&Math.min(pf.d,pl.d,pm.d)<corr)c.push({k,d:Math.min(pf.d,pl.d,pm.d),s:pm.s,pts:pf.s<=pl.s?[f,l]:[l,f]})});
   return c.sort((x,y)=>x.d-y.d).slice(0,2).sort((x,y)=>x.s-y.s);
 }
@@ -1054,15 +1072,17 @@ function fmtCard(r,p){
   const min=r.meters/WALK, sunMin=r.meters*(1-r.stats.pct)/WALK;
   $(p+"Min").textContent=`${min.toFixed(0)} ${t("min")}`;
   $(p+"Bar").style.width=`${Math.round(r.stats.pct*100)}%`;
-  $(p+"Sub").textContent=`${Math.round(r.stats.pct*100)}% ${t("shaded")} · ${sunMin.toFixed(0)} ${t("inSun")}`;
+  $(p+"Sub").textContent=`${Math.round(r.stats.pct*100)}% ${t(mode==="rain"?"covered":"shaded")} · ${sunMin.toFixed(0)} ${t(mode==="rain"?"inRain":"inSun")}`;
 }
 function renderRoutes(zoom){
   if(!view) return; layers.route.removeAll();
   const {fast,shade}=routes, main=routes[chosen], other=chosen==="shade"?fast:shade;
   if(other!==main) layers.route.add(new Graphic({geometry:pline(other.coords),symbol:{type:"simple-line",color:css("--sun"),width:4,style:"dash"}}));
   layers.route.add(new Graphic({geometry:pline(main.coords),symbol:{type:"simple-line",color:[255,255,255,.9],width:9}}));
-  const g=new Graphic({geometry:pline(main.coords),symbol:{type:"simple-line",color:chosen==="shade"?css("--shade"):css("--cool"),width:6}});
+  // whole route in the sunny colour, then the shaded stretches drawn green on top
+  const g=new Graphic({geometry:pline(main.coords),symbol:{type:"simple-line",color:exposedCol(),width:6}});
   layers.route.add(g);
+  shadeRuns(main.coords).forEach(run=>{ if(run.shaded) layers.route.add(new Graphic({geometry:pline(run.pts),symbol:{type:"simple-line",color:coveredCol(),width:6}})); });
   layers.route.add(dot(startPoint.lat,startPoint.lng,css("--heat"),16,{title:t("start"),content:nm(startPoint)}));
   layers.route.add(dot(destPoint.lat,destPoint.lng,css("--cool"),18,{title:nm(destPoint),content:destPoint.type?t("freeAccess"):""},"#132a33"));
   if(zoom) view.goTo({target:g.geometry.extent.clone().expand(1.6)}).catch(()=>{});
@@ -1071,7 +1091,7 @@ function renderRoutes(zoom){
   gl.href=`https://www.google.com/maps/dir/?api=1&origin=${startPoint.lat},${startPoint.lng}&destination=${destPoint.lat},${destPoint.lng}&travelmode=walking`;
   $("rcShade").setAttribute("aria-pressed",chosen==="shade"); $("rcFast").setAttribute("aria-pressed",chosen==="fast");
   const same=shade===fast, extra=(shade.meters-fast.meters)/WALK, saved=(fast.meters*(1-fast.stats.pct)-shade.meters*(1-shade.stats.pct))/WALK;
-  $("status").textContent=(same?(fast.stats.used.length?t("sameRoute"):t("noShade")):t("shadeBetter",Math.max(0,extra).toFixed(0),Math.max(0,saved).toFixed(0)))+(main.live?"":t("offline"));
+  $("status").textContent=(same?(fast.stats.used.length?t(tm("sameRoute")):t(tm("noShade"))):t(tm("shadeBetter"),Math.max(0,extra).toFixed(0),Math.max(0,saved).toFixed(0)))+(main.live?"":t("offline"));
   const used=main.stats.used; $("shadeBox").hidden=false;
   $("shadeList").innerHTML=used.length?used.map(k=>`<li><button class="row" data-s="${k}"><span class="stripe" style="background:${shadeCol(SHADE[k].kind)}"></span><span><span class="name">${nm(SHADE[k])}</span><br><span class="sub">${shadeLabel(SHADE[k].kind)}</span></span><span class="num"></span></button></li>`).join(""):`<li class="hint">${t("noShadeList")}</li>`;
   const near=nearestShelters([startPoint.lat,startPoint.lng],4).filter(x=>x.s!==destPoint).slice(0,3);
@@ -1177,6 +1197,20 @@ document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v)
 // =====================================================================
 applyLayout(); applyLang();
 $("mapLoading").firstChild.textContent = lang==="zh"?"地圖載入中…":"Loading map…";
+// weather setting: switch wording, colours and recalculate the current route
+function applyMode(m,init){
+  mode=m; try{localStorage.setItem("coolhk-mode",m)}catch(e){}
+  const rain=m==="rain"; $("app").classList.toggle("rain",rain);
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  $("pubTitleEl").dataset.i18n=rain?"pubTitleRain":"pubTitle"; $("goBtn").dataset.i18n=rain?"goRain":"go";
+  $("mostLbl").dataset.i18n=rain?"mostCovered":"mostShaded"; $("mostLbl").style.color=rain?"var(--rain)":"var(--shade)";
+  $("lgRSt").dataset.i18n=rain?"lgRouteDry":"lgRouteShade"; $("lgRXt").dataset.i18n=rain?"lgRouteWet":"lgRouteSun";
+  $("lgRSi").style.background=rain?"var(--rain)":"var(--shade)"; $("lgRXi").style.background=rain?"var(--wet)":"var(--sunroute)";
+  applyLang();
+  if(!init && startPoint && destPoint && routes.fast) plan(++reqId);
+}
+document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>applyMode(b.dataset.m));
+applyMode(mode,true);
 loadWeather().then(()=>renderWeather());
 loadExits();
 </script>
