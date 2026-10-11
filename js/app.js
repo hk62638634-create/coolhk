@@ -61,7 +61,7 @@ function applyLang(){
   document.documentElement.lang = lang==="zh"?"zh-Hant-HK":"en";
   document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.dataset.i18n)});
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{el.placeholder=t(el.dataset.i18nPh)});
-  $("langBtn").textContent = lang==="zh"?"EN":"中文";
+  document.querySelectorAll("#langSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
   renderLayoutBtn();
 }
 
@@ -79,7 +79,7 @@ function applyLayout(){
 function renderLayoutBtn(){ $("layoutBtn").textContent = layoutPref==="phone"?t("layoutPhone"):layoutPref==="desktop"?t("layoutDesk"):t("layoutAuto"); }
 $("layoutBtn").onclick=()=>{layoutPref={auto:"phone",phone:"desktop",desktop:"auto"}[layoutPref];try{localStorage.setItem("coolhk-layout",layoutPref)}catch(e){};applyLayout()};
 window.addEventListener("resize",applyLayout);
-$("langBtn").onclick=()=>{lang=lang==="zh"?"en":"zh";try{localStorage.setItem("coolhk-lang",lang)}catch(e){};applyLang();onLangChange()};
+document.querySelectorAll("#langSeg button").forEach(b=>b.onclick=()=>{ if(b.dataset.lang===lang) return; lang=b.dataset.lang; try{localStorage.setItem("coolhk-lang",lang)}catch(e){}; applyLang(); onLangChange(); });
 // bottom sheet: drag the handle up or down (no tap needed); it snaps to small / half / full height.
 // A quick flick moves one step in that direction. Keyboard users can still press Enter or Space on the handle.
 (function(){
@@ -693,7 +693,6 @@ function syncPub(){
   layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr; layers.mtrst.visible=LY.mtr; layers.mtrlab.visible=LY.mtr;
 }
 document.querySelectorAll("[data-ly]").forEach(c=>c.onchange=()=>{LY[c.dataset.ly]=c.checked; try{localStorage.setItem("coolhk-layers",JSON.stringify(LY))}catch(e){}; syncPub();});
-$("lyrBtn").onclick=()=>{const p=$("lyrPanel"),open=p.hidden; p.hidden=!open; $("lyrBtn").setAttribute("aria-expanded",open);};
 syncPub();
 // weather setting: switch wording, colours and recalculate the current route
 function applyMode(m,init){
