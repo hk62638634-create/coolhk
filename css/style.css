@@ -152,6 +152,13 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .modecard[data-m="rain"][aria-pressed="true"]{border-color:var(--rain);background:#e4eefc}
 .modechip{align-self:flex-start;display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
 .modechip .chg{color:var(--cool)}
+/* settings: map style, layers, language */
+.setpanel{max-height:calc(100vh - 80px);overflow:auto}
+.sethd{margin-top:4px;padding-top:12px;border-top:1px solid var(--line)}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts button{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 13px var(--f-body);padding:7px 12px;border-radius:999px;cursor:pointer}
+.opts button[aria-pressed="true"]{border-color:var(--cool);background:var(--cool-soft);color:var(--cool)}
+.setpanel .lyrpanel{border:0;box-shadow:none;padding:0;max-width:none;background:none;font-size:14px}
 /* map layer picker */
 .lyr{position:absolute;top:10px;right:10px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 #app[data-layout="desktop"] .lyr{top:118px}
