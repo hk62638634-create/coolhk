@@ -41,20 +41,20 @@
         <!-- ============ PUBLIC ============ -->
         <section id="panel-public" style="display:flex;flex-direction:column;gap:14px">
           <div>
-            <h2 id="pubTitleEl" data-i18n="pubTitle">Walk in the shade</h2>
-            <p class="hint" data-i18n="pubHint">Type where you're going. Leave the start empty to use your current location.</p>
+            <h2 id="pubTitleEl" data-i18n="pubTitle">Where are you going?</h2>
+            <p class="hint" id="pubHintEl" data-i18n="pubHint">We'll find you a way with more shade. Leave “From” blank to start from where you are.</p>
           </div>
           <button type="button" class="modechip" id="modeChip" aria-controls="setPanel"><span id="modeChipT" data-i18n="modeChipSun">☀️ Sunny mode</span><span class="chg" data-i18n="modeChange">Change</span></button>
           <div id="heatAlert"></div>
           <form class="trip" id="tripForm" autocomplete="off">
             <span class="dot" style="background:var(--heat)"></span>
-            <div class="field"><input id="startIn" data-i18n-ph="startPh" placeholder="Start: your current location" role="combobox" aria-autocomplete="list" aria-controls="startSugg"><div class="sugg" id="startSugg" role="listbox" hidden></div><div class="exitrow" id="startExits"></div></div>
+            <div class="field"><input id="startIn" data-i18n-ph="startPh" placeholder="From: where you are now" role="combobox" aria-autocomplete="list" aria-controls="startSugg"><div class="sugg" id="startSugg" role="listbox" hidden></div><div class="exitrow" id="startExits"></div></div>
             <button type="button" class="mini" id="pickBtn" aria-pressed="false" data-i18n="pick">Pick on map</button>
             <span class="vline"></span><span></span><span></span>
             <span class="dot" style="background:var(--cool)"></span>
-            <div class="field"><input id="destIn" data-i18n-ph="destPh" placeholder="Destination: nearest cool shelter" role="combobox" aria-autocomplete="list" aria-controls="destSugg"><div class="sugg" id="destSugg" role="listbox" hidden></div><div class="exitrow" id="destExits"></div></div>
+            <div class="field"><input id="destIn" data-i18n-ph="destPh" placeholder="To: a place, building or MTR exit" role="combobox" aria-autocomplete="list" aria-controls="destSugg"><div class="sugg" id="destSugg" role="listbox" hidden></div><div class="exitrow" id="destExits"></div></div>
             <button type="button" class="mini" id="swapBtn" title="Swap">⇅</button>
-            <button class="btn" type="submit" id="goBtn" style="grid-column:1/-1" data-i18n="go">Find shaded route</button>
+            <button class="btn" type="submit" id="goBtn" style="grid-column:1/-1" data-i18n="go">Find a shady way</button>
           </form>
           <div class="status" id="status"></div>
           <a class="btn ghost small" id="gmapsLink" href="#" target="_blank" rel="noopener" hidden style="text-align:center;text-decoration:none" data-i18n="openGmaps">Open walking directions in Google Maps</a>
