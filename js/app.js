@@ -447,7 +447,7 @@ const LINE_SEQ={
  EAL:[["Admiralty","Exhibition Centre","Hung Hom","Mong Kok East","Kowloon Tong","Tai Wai","Sha Tin","Fo Tan","University","Tai Po Market","Tai Wo","Fanling","Sheung Shui","Lo Wu"],["Sheung Shui","Lok Ma Chau"],["Fo Tan","Racecourse","University"]],
  TML:[["Wu Kai Sha","Ma On Shan","Heng On","Tai Shui Hang","Shek Mun","City One","Sha Tin Wai","Che Kung Temple","Tai Wai","Hin Keng","Diamond Hill","Kai Tak","Sung Wong Toi","To Kwa Wan","Ho Man Tin","Hung Hom","East Tsim Sha Tsui","Austin","Nam Cheong","Mei Foo","Tsuen Wan West","Kam Sheung Road","Yuen Long","Long Ping","Tin Shui Wai","Siu Hong","Tuen Mun"]]
 };
-// real MTR track shapes, prepared ahead of time by scripts/build_data.py (GitHub Actions, weekly)
+// real MTR track shapes, prepared ahead of time by scripts/build_data.py (run by hand)
 let MTR_GEO=null;
 // real covered walkways, footbridges, subways and indoor links (data/shade.geojson, built by scripts/build_data.py)
 async function loadShadeGeo(){ try{
