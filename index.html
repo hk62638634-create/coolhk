@@ -187,8 +187,7 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 #app[data-layout="phone"] #sheet[data-state="mini"] ~ .mapwrap .bmaps{bottom:128px}
 #app[data-layout="phone"] #sheet[data-state="full"] ~ .mapwrap .bmaps{display:none}
 /* keep the ArcGIS zoom buttons above the bottom sheet */
-#app[data-layout="phone"] .esri-ui-bottom-right{bottom:calc(52% + 4px)!important;transition:bottom .25s ease}
-#app[data-layout="phone"] #sheet[data-state="mini"] ~ .mapwrap .esri-ui-bottom-right{bottom:122px!important}
+/* zoom and locate buttons follow the bottom sheet through view.padding (see syncPadding) */
 #app[data-layout="phone"] #sheet[data-state="full"] ~ .mapwrap .esri-ui-bottom-right{display:none}
 #app[data-layout="phone"] .wx{max-width:62%}
 /* phone preview frame on a big screen */
@@ -696,6 +695,11 @@ window.addEventListener("resize",applyLayout);
 $("langBtn").onclick=()=>{lang=lang==="zh"?"en":"zh";try{localStorage.setItem("coolhk-lang",lang)}catch(e){};applyLang();onLangChange()};
 $("handle").onclick=()=>{const s=$("sheet");s.dataset.state={peek:"full",full:"mini",mini:"peek"}[s.dataset.state]};
 const sheetTo=st=>{ if($("app").dataset.layout==="phone") $("sheet").dataset.state=st; };
+// tell the map how much of it the bottom sheet covers, so goTo / centring / popups use the visible part
+function syncPadding(){
+  if(!view) return; const phone=$("app").dataset.layout==="phone", st=$("sheet").dataset.state;
+  view.padding={top:0,left:0,right:0,bottom: phone&&st!=="full" ? $("sheet").offsetHeight : 0};
+}
 
 // =====================================================================
 // WEATHER — district temperature & RH from the Hong Kong Observatory
@@ -740,8 +744,8 @@ let view, Graphic, Circle, Basemap, WebTileLayer, layers={}, currentBasemap="hk"
 let version="public", tier=0;
 try{tier=+(localStorage.getItem("coolhk-tier")||0)}catch(e){}
 
-require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basemap","esri/layers/WebTileLayer","esri/layers/GraphicsLayer","esri/Graphic","esri/geometry/Circle","esri/core/reactiveUtils"],
-(esriConfig,EsriMap,WebMap,MapView,_Basemap,_WebTileLayer,GraphicsLayer,_Graphic,_Circle,reactiveUtils)=>{
+require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basemap","esri/layers/WebTileLayer","esri/layers/GraphicsLayer","esri/Graphic","esri/geometry/Circle","esri/core/reactiveUtils","esri/widgets/Locate"],
+(esriConfig,EsriMap,WebMap,MapView,_Basemap,_WebTileLayer,GraphicsLayer,_Graphic,_Circle,reactiveUtils,Locate)=>{
   Graphic=_Graphic; Circle=_Circle; Basemap=_Basemap; WebTileLayer=_WebTileLayer;
   esriConfig.portalUrl = CONFIG.PORTAL_URL;
   if(CONFIG.ARCGIS_API_KEY) esriConfig.apiKey = CONFIG.ARCGIS_API_KEY;
@@ -754,6 +758,11 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
     constraints:{minZoom:10,maxZoom:19,snapToZoom:false},
     popup:{dockEnabled:false,dockOptions:{buttonEnabled:false}}});
   view.ui.move("zoom","bottom-right");
+  // "locate me" button: only asks for the location when the user taps it
+  view.ui.add(new Locate({view,scale:4000,popupEnabled:false}),{position:"bottom-right",index:0});
+  // keep routes, popups and buttons in the part of the map the bottom sheet does not cover
+  new ResizeObserver(syncPadding).observe($("sheet"));
+  syncPadding();
   // keep the map attribution visible (required by the Esri / Lands Department terms)
 
   view.on("click",e=>{
