@@ -163,7 +163,7 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
 (esriConfig,EsriMap,WebMap,MapView,_Basemap,_WebTileLayer,GraphicsLayer,_Graphic,_Circle,reactiveUtils,Locate)=>{
   Graphic=_Graphic; Circle=_Circle; Basemap=_Basemap; WebTileLayer=_WebTileLayer;
   esriConfig.portalUrl = CONFIG.PORTAL_URL;
-  if(CONFIG.ARCGIS_API_KEY) esriConfig.apiKey = CONFIG.ARCGIS_API_KEY;
+  // no API key on purpose: only free services are used
 
   const map = CONFIG.WEBMAP_ID ? new WebMap({portalItem:{id:CONFIG.WEBMAP_ID}}) : new EsriMap({basemap:makeBasemap("hk")});
   ["lst","catch","walk","demand","areas","shade","shelters","mtr","mtrst","mtrlab","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
@@ -202,12 +202,20 @@ function makeBasemap(id){
       baseLayers:[new WebTileLayer({urlTemplate:"https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/{level}/{col}/{row}.png",copyright:"© Lands Department, HKSAR"})],
       referenceLayers:[new WebTileLayer({urlTemplate:`https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/${lab}/WGS84/{level}/{col}/{row}.png`})]});
   }
-  return Basemap.fromId(id==="topo"?"topo-vector":"hybrid");
+  // free basemaps only (no Esri / paid tiles): Lands Department imagery, or OpenStreetMap as a fallback
+  if(id==="img"){
+    const lab = lang==="zh"?"tc":"en";
+    return new Basemap({title:"LandsD imagery",id:"hk-img",
+      baseLayers:[new WebTileLayer({urlTemplate:"https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/imagery/WGS84/{level}/{col}/{row}.png",copyright:"© Lands Department, HKSAR"})],
+      referenceLayers:[new WebTileLayer({urlTemplate:`https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/${lab}/WGS84/{level}/{col}/{row}.png`})]});
+  }
+  return new Basemap({title:"OpenStreetMap",id:"osm",
+    baseLayers:[new WebTileLayer({urlTemplate:"https://tile.openstreetmap.org/{level}/{col}/{row}.png",copyright:"© OpenStreetMap contributors"})]});
 }
 function checkHKTiles(){
   if(CONFIG.WEBMAP_ID) return;
   const img=new Image(); let done=false;
-  const fail=()=>{ if(done) return; done=true; if(currentBasemap==="hk"){ setBasemap("topo"); toast(lang==="zh"?"未能載入地政總署地圖，已改用 ArcGIS 地形圖。":"Couldn't load the Lands Department map, so we switched to ArcGIS Topographic."); } };
+  const fail=()=>{ if(done) return; done=true; if(currentBasemap==="hk"){ setBasemap("osm"); toast(lang==="zh"?"未能載入地政總署地圖，已改用 OpenStreetMap 地圖。":"Couldn't load the Lands Department map, so we switched to OpenStreetMap."); } };
   img.onload=()=>{done=true}; img.onerror=fail; setTimeout(fail,8000);
   img.src="https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/WGS84/13/6694/3575.png";
 }
@@ -318,7 +326,8 @@ async function searchGeoInfo(q,n=5){
 }
 let gPlaces=null;
 async function googleReady(){
-  if(!CONFIG.GOOGLE_MAPS_API_KEY) return null; if(gPlaces) return gPlaces;
+  return null; // Google Places is a paid service, so it is permanently switched off
+  if(gPlaces) return gPlaces;
   if(!window.google||!google.maps){ await new Promise((res,rej)=>{const sc=document.createElement("script");
     sc.src=`https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&loading=async&libraries=places&v=weekly`;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
     await new Promise(r=>{const w=()=>google.maps.importLibrary?r():setTimeout(w,50);w()}); }
@@ -509,10 +518,6 @@ async function resolvePlace(q){
   try{ // Hong Kong government location search (results in HK1980 Grid)
     const r=await fetch(`https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q=${encodeURIComponent(s)}`).then(r=>r.json());
     if(Array.isArray(r)&&r.length){const[la,ln]=hk80ToWgs(+r[0].x,+r[0].y);return{lat:la,lng:ln,en:r[0].nameEN||s,zh:r[0].nameZH||s}}
-  }catch(e){}
-  try{ // fallback: ArcGIS World Geocoding Service
-    const r=await fetch(`https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(s)}&countryCode=HKG&maxLocations=1&outFields=PlaceName&f=json`).then(r=>r.json());
-    const c=r.candidates&&r.candidates[0]; if(c) return{lat:c.location.y,lng:c.location.x,en:c.address,zh:c.address};
   }catch(e){}
   return null;
 }
