@@ -14,7 +14,7 @@
 :root{
   --bg:#eef3f4; --panel:#ffffff; --ink:#132a33; --muted:#5b707a; --line:#d8e2e6;
   --cool:#0f7c8c; --cool-soft:#d6eef1; --shade:#1f9d6b; --tree:#6aa84f; --heat:#d9480f; --heat-soft:#fde4d6;
-  --warn:#e8a317; --ok:#2f8f5b; --sun:#9aa7ad; --prem:#7a4fbf; --prem-soft:#ece4f7; --sunroute:#f08c00; --rain:#2f6fd6; --wet:#8a99a3;
+  --warn:#e8a317; --ok:#2f8f5b; --sun:#9aa7ad; --prem:#7a4fbf; --prem-soft:#ece4f7; --sunroute:#f08c00; --rain:#2f6fd6; --wet:#8a99a3; --covered:#3566b8;
   --f-display:"Bricolage Grotesque","Noto Sans TC",ui-sans-serif,system-ui,sans-serif;
   --f-body:"Figtree","Noto Sans TC",ui-sans-serif,system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -280,12 +280,12 @@ body.framed-bg{background:#cfd8db}
             <ul class="list" id="nearList" style="margin-top:8px"></ul>
           </div>
           <div class="legend">
-            <span><i class="ln" style="background:var(--shade)"></i><span data-i18n="lgCovered">Covered walkway / footbridge</span></span>
+            <span><i class="ln" style="background:var(--covered)"></i><span data-i18n="lgCovered">Covered walkway / footbridge</span></span>
             <span><i class="ln" style="background:var(--tree)"></i><span data-i18n="lgTrees">Tree-lined street</span></span>
             <span><i class="ln" id="lgRSi" style="background:var(--shade);height:6px"></i><span id="lgRSt" data-i18n="lgRouteShade">Route: in shade</span></span>
             <span><i class="ln" id="lgRXi" style="background:var(--sunroute);height:6px"></i><span id="lgRXt" data-i18n="lgRouteSun">Route: in the sun</span></span>
             <span><i style="background:var(--cool)"></i><span data-i18n="lgShelter">Cool shelter (air-con)</span></span>
-            <span><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E)"></i><span data-i18n="lgMtr">MTR lines</span></span>
+            <span><i class="ln" style="background:#9aa7ad"></i><span data-i18n="lgMtr">MTR lines</span></span>
           </div>
         </section>
 
@@ -403,11 +403,11 @@ body.framed-bg{background:#cfd8db}
       <div class="lyr" id="lyr">
         <button type="button" class="lyrbtn" id="lyrBtn" aria-expanded="false" aria-controls="lyrPanel" data-i18n="lyrBtn">🗂 Layers</button>
         <div class="lyrpanel" id="lyrPanel" hidden>
-          <label><input type="checkbox" data-ly="covered" checked><i class="ln" style="background:var(--shade)"></i><span data-i18n="lyCovered">Covered walkways &amp; footbridges</span></label>
+          <label><input type="checkbox" data-ly="covered" checked><i class="ln" style="background:var(--covered)"></i><span data-i18n="lyCovered">Covered walkways &amp; footbridges</span></label>
           <label id="lyTreesRow"><input type="checkbox" data-ly="trees" checked><i class="ln" style="background:var(--tree)"></i><span data-i18n="lyTrees">Tree-lined streets</span></label>
           <label><input type="checkbox" data-ly="shelters" checked><i class="pt" style="background:var(--cool)"></i><span data-i18n="lyShelters">Cool shelters</span></label>
           <label><input type="checkbox" data-ly="walk"><i class="pg"></i><span data-i18n="lyWalk">5 / 10-min walk to a shelter</span></label>
-          <label><input type="checkbox" data-ly="mtr" checked><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E)"></i><span data-i18n="lyMtr">MTR lines</span></label>
+          <label><input type="checkbox" data-ly="mtr" checked><i class="ln" style="background:#9aa7ad"></i><span data-i18n="lyMtr">MTR lines</span></label>
         </div>
       </div>
       <div class="toast" id="toast"></div>
@@ -773,8 +773,9 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
   if(CONFIG.ARCGIS_API_KEY) esriConfig.apiKey = CONFIG.ARCGIS_API_KEY;
 
   const map = CONFIG.WEBMAP_ID ? new WebMap({portalItem:{id:CONFIG.WEBMAP_ID}}) : new EsriMap({basemap:makeBasemap("hk")});
-  ["lst","catch","walk","demand","areas","shade","shelters","mtr","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
-  map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
+  ["lst","catch","walk","demand","areas","shade","shelters","mtr","mtrlab","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
+  layers.mtrlab.minScale=20000; // station names only at street level
+  map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.mtrlab,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
 
   view = new MapView({container:"map",map,center:[114.18,22.30],zoom:13,
     constraints:{minZoom:10,maxZoom:19,snapToZoom:false},
@@ -825,7 +826,7 @@ const rgba=(hex,a)=>{const c=hex.replace("#","");const n=parseInt(c.length===3?c
 function dot(lat,lng,color,size,popup,outline="#ffffff"){return new Graphic({geometry:pt(lat,lng),symbol:{type:"simple-marker",color,size,outline:{color:outline,width:2}},popupTemplate:popup})}
 function ring(lat,lng,r,fill,line,dash){return new Graphic({geometry:new Circle({center:pt(lat,lng),radius:r,radiusUnit:"meters",geodesic:true}),symbol:{type:"simple-fill",color:fill,outline:{color:line||[0,0,0,0],width:line?1:0,style:dash?"dash":"solid"}}})}
 
-function shadeCol(k){return k==="trees"?css("--tree"):css("--shade")}
+function shadeCol(k){return k==="trees"?css("--tree"):css("--covered")}
 function shadeLabel(k){return k==="trees"?t("shadeTrees"):k==="indoor"?t("shadeIndoor"):t("shadeCovered")}
 function drawShade(){
   layers.shade.removeAll();
@@ -1055,10 +1056,13 @@ function drawMTR(){
   const byEn=Object.fromEntries(MTR.map(s=>[s.en,s]));
   Object.entries(LINE_SEQ).forEach(([code,paths])=>paths.forEach(names=>{
     const pts=names.map(n=>byEn[n]).filter(Boolean).map(s=>[s.lat,s.lng]); if(pts.length<2) return;
-    layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:[255,255,255,.85],width:6}}));
-    layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:LINES[code][2],width:3.5},
-      popupTemplate:{title:lang==="zh"?LINES[code][1]:LINES[code][0],content:names.filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")}}));
+    // thin, quiet grey so the shade network stays the main thing on the map; tap a line to see its name and colour
+    layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:[110,122,130,.55],width:2},
+      popupTemplate:{title:lang==="zh"?LINES[code][1]:LINES[code][0],content:`<span style="display:inline-block;width:28px;height:5px;border-radius:3px;background:${LINES[code][2]};vertical-align:middle"></span> `+names.filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")}}));
   }));
+  // station names (text only, no dots) when zoomed in to street level
+  if(layers.mtrlab){ layers.mtrlab.removeAll();
+    MTR.forEach(s=>layers.mtrlab.add(new Graphic({geometry:pt(s.lat,s.lng),symbol:{type:"text",text:stLabel(s),color:"#4a5b63",haloColor:"#ffffff",haloSize:1.5,font:{size:11,weight:"bold"}}}))); }
   drawSelExits();
 }
 function drawSelExits(){
@@ -1261,7 +1265,7 @@ function show(v){
   if(!view) return;
   view.closePopup&&view.closePopup();
   const pub=v==="public";
-  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true; layers.walk.visible=false; layers.mtr.visible=true;
+  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true; layers.walk.visible=false; layers.mtr.visible=true; layers.mtrlab.visible=true;
   ["lst","catch","demand","areas","deploy"].forEach(k=>layers[k].visible=!pub);
   if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); syncPub(); }
   else { renderPremium(); }
@@ -1282,7 +1286,7 @@ function syncPub(){
   $("lyTreesRow").classList.toggle("dim",mode==="rain"); // trees give no rain cover
   if(!view||version!=="public") return;
   layers.shade.graphics.forEach(g=>{const k=g.attributes&&g.attributes.kind; g.visible = k==="trees"?LY.trees:LY.covered;});
-  layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr;
+  layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr; layers.mtrlab.visible=LY.mtr;
 }
 document.querySelectorAll("[data-ly]").forEach(c=>c.onchange=()=>{LY[c.dataset.ly]=c.checked; try{localStorage.setItem("coolhk-layers",JSON.stringify(LY))}catch(e){}; syncPub();});
 $("lyrBtn").onclick=()=>{const p=$("lyrPanel"),open=p.hidden; p.hidden=!open; $("lyrBtn").setAttribute("aria-expanded",open);};
