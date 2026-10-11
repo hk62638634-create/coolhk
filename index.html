@@ -151,6 +151,20 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .chip.wide{font-family:var(--f-body)}
 .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
+/* map layer picker */
+.lyr{position:absolute;top:10px;right:10px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#app[data-layout="desktop"] .lyr{top:118px}
+#app[data-layout="phone"] #sheet[data-state="full"] ~ .mapwrap .lyr{display:none}
+.lyrbtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:7px 11px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.lyrbtn[aria-expanded="true"]{border-color:var(--cool);color:var(--cool)}
+.lyrpanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.16);display:flex;flex-direction:column;gap:9px;font-size:13px;max-width:240px}
+.lyrpanel[hidden]{display:none}
+.lyrpanel label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.lyrpanel label.dim{opacity:.5}
+.lyrpanel i{flex:none;display:inline-block}
+.lyrpanel i.ln{width:18px;height:4px;border-radius:2px}
+.lyrpanel i.pt{width:10px;height:10px;border-radius:50%}
+.lyrpanel i.pg{width:14px;height:14px;border-radius:50%;background:rgba(15,124,140,.15);border:1.5px dashed var(--cool)}
 .maploading{position:absolute;inset:0;z-index:2;display:flex;justify-content:center;align-items:flex-start;padding-top:22vh;background:var(--bg);color:var(--muted);font-weight:600;font-size:14px;transition:opacity .3s}
 .maploading.done{opacity:0;pointer-events:none}
 
@@ -181,6 +195,7 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 #app.framed{width:400px;height:min(860px,calc(100% - 32px));margin:16px auto;border-radius:30px;overflow:hidden;border:9px solid #1b1f22;box-shadow:0 12px 40px rgba(0,0,0,.25)}
 body.framed-bg{background:#cfd8db}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.switch,.bottomnav{display:none!important} /* Premium hidden for now: delete this line to bring it back */
 </style>
 </head>
 <body>
@@ -249,7 +264,7 @@ body.framed-bg{background:#cfd8db}
             <span><i class="ln" id="lgRSi" style="background:var(--shade);height:6px"></i><span id="lgRSt" data-i18n="lgRouteShade">Route: in shade</span></span>
             <span><i class="ln" id="lgRXi" style="background:var(--sunroute);height:6px"></i><span id="lgRXt" data-i18n="lgRouteSun">Route: in the sun</span></span>
             <span><i style="background:var(--cool)"></i><span data-i18n="lgShelter">Cool shelter (air-con)</span></span>
-            <span><i style="background:#fff;border:2px solid #E2231A;box-sizing:border-box"></i><span data-i18n="lgMtr">MTR station</span></span>
+            <span><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E)"></i><span data-i18n="lgMtr">MTR lines</span></span>
           </div>
         </section>
 
@@ -364,6 +379,16 @@ body.framed-bg{background:#cfd8db}
         <button data-b="topo" aria-pressed="false" data-i18n="bmTopo">Topographic</button>
         <button data-b="hybrid" aria-pressed="false" data-i18n="bmImg">Imagery</button>
       </div>
+      <div class="lyr" id="lyr">
+        <button type="button" class="lyrbtn" id="lyrBtn" aria-expanded="false" aria-controls="lyrPanel" data-i18n="lyrBtn">🗂 Layers</button>
+        <div class="lyrpanel" id="lyrPanel" hidden>
+          <label><input type="checkbox" data-ly="covered" checked><i class="ln" style="background:var(--shade)"></i><span data-i18n="lyCovered">Covered walkways &amp; footbridges</span></label>
+          <label id="lyTreesRow"><input type="checkbox" data-ly="trees" checked><i class="ln" style="background:var(--tree)"></i><span data-i18n="lyTrees">Tree-lined streets</span></label>
+          <label><input type="checkbox" data-ly="shelters" checked><i class="pt" style="background:var(--cool)"></i><span data-i18n="lyShelters">Cool shelters</span></label>
+          <label><input type="checkbox" data-ly="walk"><i class="pg"></i><span data-i18n="lyWalk">5 / 10-min walk to a shelter</span></label>
+          <label><input type="checkbox" data-ly="mtr" checked><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E)"></i><span data-i18n="lyMtr">MTR lines</span></label>
+        </div>
+      </div>
       <div class="toast" id="toast"></div>
     </div>
   </div>
@@ -422,7 +447,7 @@ const T = {
   freeAccess:"Air-conditioned, free to enter",walk:"Walk",desert:"Cool Island Desert",nearest:"Nearest shelter",surf:"Surface temp",
   subscribed:p=>`Subscribed to ${p} (demo)`,catchNote:"Shaded rings: 5 / 10-min walk",
   deployTag:i=>i===0?"Mobile cooling unit":"Hydration station",
-  lgMtr:"MTR station",useMyLoc:"Use my current location",nearestOpt:"Nearest cool shelter",hdrNearMtr:"Nearby MTR stations",hdrNearShel:"Nearby cool shelters",
+  lgMtr:"MTR lines",lyrBtn:"🗂 Layers",lyCovered:"Covered walkways & footbridges",lyTrees:"Tree-lined streets",lyShelters:"Cool shelters",lyWalk:"5 / 10-min walk to a shelter",lyMtr:"MTR lines",useMyLoc:"Use my current location",nearestOpt:"Nearest cool shelter",hdrNearMtr:"Nearby MTR stations",hdrNearShel:"Nearby cool shelters",
   hdrMtr:"MTR stations",hdrExits:"Station exits",hdrPlaces:"Places",hdrSearch:"Addresses & places",exit:"Exit",stCentre:"Station centre",chooseExit:"Exit:",
   exitsLoading:"Loading exits…",exitsNone:"Exit locations need an internet connection.",stSuf:" Station",exitLabel:(st,r)=>`${st} Station · Exit ${r}`,
   linesLbl:"Lines",exitsLbl:"Exits",typeShelter:"Cool shelter",typeArea:"Neighbourhood",noSugg:"No matches yet. Keep typing or press Find.",hdrAddr:"Addresses",hdrGoogle:"Google Maps places",srcALS:"HK address lookup",srcGeo:"HK GeoInfo Map",openGmaps:"Open walking directions in Google Maps"},
@@ -459,7 +484,7 @@ const T = {
   freeAccess:"有冷氣，免費進入",walk:"步行",desert:"避暑沙漠",nearest:"最近避暑點",surf:"地表溫度",
   subscribed:p=>`已訂閱${p}（示範）`,catchNote:"陰影圈：5／10 分鐘步行範圍",
   deployTag:i=>i===0?"流動降溫站":"補水站",
-  lgMtr:"港鐵站",useMyLoc:"使用我目前的位置",nearestOpt:"最近的避暑點",hdrNearMtr:"附近港鐵站",hdrNearShel:"附近避暑點",
+  lgMtr:"港鐵綫",lyrBtn:"🗂 圖層",lyCovered:"有蓋行人道及天橋",lyTrees:"樹蔭街道",lyShelters:"避暑點",lyWalk:"避暑點 5 / 10 分鐘步行範圍",lyMtr:"港鐵綫",useMyLoc:"使用我目前的位置",nearestOpt:"最近的避暑點",hdrNearMtr:"附近港鐵站",hdrNearShel:"附近避暑點",
   hdrMtr:"港鐵站",hdrExits:"車站出口",hdrPlaces:"地點",hdrSearch:"地址及地點",exit:"出口",stCentre:"車站中心",chooseExit:"出口：",
   exitsLoading:"正在載入出口…",exitsNone:"需要上網才能顯示出口位置。",stSuf:"站",exitLabel:(st,r)=>`${st}站 ${r} 出口`,
   linesLbl:"路綫",exitsLbl:"出口",typeShelter:"避暑點",typeArea:"社區",noSugg:"暫時未有結果，繼續輸入或按「搵最陰涼路線」。",hdrAddr:"地址",hdrGoogle:"Google 地圖地點",srcALS:"香港地址查詢",srcGeo:"地理資訊地圖",openGmaps:"在 Google 地圖開啟步行路線"}
@@ -722,9 +747,8 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
   if(CONFIG.ARCGIS_API_KEY) esriConfig.apiKey = CONFIG.ARCGIS_API_KEY;
 
   const map = CONFIG.WEBMAP_ID ? new WebMap({portalItem:{id:CONFIG.WEBMAP_ID}}) : new EsriMap({basemap:makeBasemap("hk")});
-  ["lst","catch","demand","areas","shade","shelters","mtr","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
-  layers.mtr.minScale=80000;
-  map.addMany([layers.lst,layers.catch,layers.demand,layers.shade,layers.areas,layers.shelters,layers.mtr,layers.route,layers.exits,layers.deploy]);
+  ["lst","catch","walk","demand","areas","shade","shelters","mtr","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
+  map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
 
   view = new MapView({container:"map",map,center:[114.18,22.30],zoom:13,
     constraints:{minZoom:10,maxZoom:19,snapToZoom:false},
@@ -739,7 +763,7 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
   });
   reactiveUtils.when(()=>view.stationary,()=>{ if(version==="premium"&&view.center) renderWeather([view.center.latitude,view.center.longitude]); });
 
-  drawShade(); drawShelters(); drawCatch(); drawMTR();
+  drawShade(); drawShelters(); drawCatch(); drawWalk(); drawMTR();
   view.when(()=>{ $("mapLoading").classList.add("done"); show("public"); checkHKTiles(); });
 });
 
@@ -775,8 +799,8 @@ function shadeLabel(k){return k==="trees"?t("shadeTrees"):k==="indoor"?t("shadeI
 function drawShade(){
   layers.shade.removeAll();
   SHADE.forEach(s=>{
-    layers.shade.add(new Graphic({geometry:pline(s.pts),symbol:{type:"simple-line",color:[255,255,255,.9],width:8}}));
-    layers.shade.add(new Graphic({geometry:pline(s.pts),symbol:{type:"simple-line",color:shadeCol(s.kind),width:5,style:s.kind==="indoor"?"short-dot":"solid"},
+    layers.shade.add(new Graphic({attributes:{kind:s.kind},geometry:pline(s.pts),symbol:{type:"simple-line",color:[255,255,255,.9],width:8}}));
+    layers.shade.add(new Graphic({attributes:{kind:s.kind},geometry:pline(s.pts),symbol:{type:"simple-line",color:shadeCol(s.kind),width:5,style:s.kind==="indoor"?"short-dot":"solid"},
       popupTemplate:{title:nm(s),content:shadeLabel(s.kind)}}));
   });
 }
@@ -788,9 +812,14 @@ function drawCatch(){
   layers.catch.removeAll(); const c=css("--cool");
   SHELTERS.forEach(s=>{ layers.catch.add(ring(s.lat,s.lng,10*WALK/DETOUR,rgba(c,.06),rgba(c,.6),true)); layers.catch.add(ring(s.lat,s.lng,5*WALK/DETOUR,rgba(c,.10))); });
 }
+// public layer: 5 / 10-minute walk areas around cool shelters (polygons)
+function drawWalk(){
+  layers.walk.removeAll(); const c=css("--cool");
+  SHELTERS.forEach(s=>{ layers.walk.add(ring(s.lat,s.lng,10*WALK/DETOUR,rgba(c,.06),rgba(c,.6),true)); layers.walk.add(ring(s.lat,s.lng,5*WALK/DETOUR,rgba(c,.12))); });
+}
 function onLangChange(){
   if(!view) return; if(currentBasemap==="hk" && !CONFIG.WEBMAP_ID) setBasemap("hk");
-  drawShade(); drawShelters(); drawMTR(); renderWeather(); refreshExitRows();
+  drawShade(); drawShelters(); drawMTR(); syncPub(); renderWeather(); refreshExitRows();
   ["start","dest"].forEach(f=>{const i=$(f+"In");if(i._sel&&i._sel.en){i.value=i._sel.kind==="exit"?t("exitLabel",nm(i._sel.obj),i._sel.ref):i._sel.kind==="mtr"?stLabel(i._sel.obj):(lang==="zh"?i._sel.zh:i._sel.en);i._sel.label=i.value}});
   if(version==="public"){ if(routes.fast) renderRoutes(); } else renderPremium();
 }
@@ -977,11 +1006,28 @@ function refreshExitRows(){["start","dest"].forEach(f=>{const row=$(f+"Exits");i
 });
 
 // MTR layer: station markers (line-coloured ring) + exits of the chosen stations
+// MTR lines drawn as straight links between stations, in line order (branches listed separately)
+const LINE_SEQ={
+ ISL:[["Kennedy Town","HKU","Sai Ying Pun","Sheung Wan","Central","Admiralty","Wan Chai","Causeway Bay","Tin Hau","Fortress Hill","North Point","Quarry Bay","Tai Koo","Sai Wan Ho","Shau Kei Wan","Heng Fa Chuen","Chai Wan"]],
+ TWL:[["Central","Admiralty","Tsim Sha Tsui","Jordan","Yau Ma Tei","Mong Kok","Prince Edward","Sham Shui Po","Cheung Sha Wan","Lai Chi Kok","Mei Foo","Lai King","Kwai Fong","Kwai Hing","Tai Wo Hau","Tsuen Wan"]],
+ KTL:[["Whampoa","Ho Man Tin","Yau Ma Tei","Mong Kok","Prince Edward","Shek Kip Mei","Kowloon Tong","Lok Fu","Wong Tai Sin","Diamond Hill","Choi Hung","Kowloon Bay","Ngau Tau Kok","Kwun Tong","Lam Tin","Yau Tong","Tiu Keng Leng"]],
+ TKL:[["North Point","Quarry Bay","Yau Tong","Tiu Keng Leng","Tseung Kwan O","Hang Hau","Po Lam"],["Tseung Kwan O","LOHAS Park"]],
+ SIL:[["Admiralty","Ocean Park","Wong Chuk Hang","Lei Tung","South Horizons"]],
+ TCL:[["Hong Kong","Kowloon","Olympic","Nam Cheong","Lai King","Tsing Yi","Sunny Bay","Tung Chung"]],
+ AEL:[["Hong Kong","Kowloon","Tsing Yi","Airport","AsiaWorld-Expo"]],
+ DRL:[["Sunny Bay","Disneyland Resort"]],
+ EAL:[["Admiralty","Exhibition Centre","Hung Hom","Mong Kok East","Kowloon Tong","Tai Wai","Sha Tin","Fo Tan","University","Tai Po Market","Tai Wo","Fanling","Sheung Shui","Lo Wu"],["Sheung Shui","Lok Ma Chau"],["Fo Tan","Racecourse","University"]],
+ TML:[["Wu Kai Sha","Ma On Shan","Heng On","Tai Shui Hang","Shek Mun","City One","Sha Tin Wai","Che Kung Temple","Tai Wai","Hin Keng","Diamond Hill","Kai Tak","Sung Wong Toi","To Kwa Wan","Ho Man Tin","Hung Hom","East Tsim Sha Tsui","Austin","Nam Cheong","Mei Foo","Tsuen Wan West","Kam Sheung Road","Yuen Long","Long Ping","Tin Shui Wai","Siu Hong","Tuen Mun"]]
+};
 function drawMTR(){
   if(!layers.mtr) return; layers.mtr.removeAll();
-  MTR.forEach(s=>layers.mtr.add(new Graphic({geometry:pt(s.lat,s.lng),
-    symbol:{type:"simple-marker",color:"#ffffff",size:10,outline:{color:LINES[s.lines[0]][2],width:3}},
-    popupTemplate:{title:stLabel(s),content:`${t("linesLbl")}: ${lineNames(s)}${s.exits&&s.exits.length?`<br>${t("exitsLbl")}: ${s.exits.map(x=>x.ref).join(", ")}`:""}`}})));
+  const byEn=Object.fromEntries(MTR.map(s=>[s.en,s]));
+  Object.entries(LINE_SEQ).forEach(([code,paths])=>paths.forEach(names=>{
+    const pts=names.map(n=>byEn[n]).filter(Boolean).map(s=>[s.lat,s.lng]); if(pts.length<2) return;
+    layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:[255,255,255,.85],width:6}}));
+    layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:LINES[code][2],width:3.5},
+      popupTemplate:{title:lang==="zh"?LINES[code][1]:LINES[code][0],content:names.filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")}}));
+  }));
   drawSelExits();
 }
 function drawSelExits(){
@@ -1184,9 +1230,9 @@ function show(v){
   if(!view) return;
   view.closePopup&&view.closePopup();
   const pub=v==="public";
-  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true;
+  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true; layers.walk.visible=false; layers.mtr.visible=true;
   ["lst","catch","demand","areas","deploy"].forEach(k=>layers[k].visible=!pub);
-  if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); }
+  if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); syncPub(); }
   else { renderPremium(); }
   sheetTo("peek");
 }
@@ -1197,6 +1243,19 @@ document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v)
 // =====================================================================
 applyLayout(); applyLang();
 $("mapLoading").firstChild.textContent = lang==="zh"?"地圖載入中…":"Loading map…";
+// map layers the user can switch on and off (lines, points, polygons, MTR lines); remembered in this browser
+let LY={covered:true,trees:true,shelters:true,walk:false,mtr:true};
+try{Object.assign(LY,JSON.parse(localStorage.getItem("coolhk-layers")||"{}"))}catch(e){}
+function syncPub(){
+  document.querySelectorAll("[data-ly]").forEach(c=>c.checked=!!LY[c.dataset.ly]);
+  $("lyTreesRow").classList.toggle("dim",mode==="rain"); // trees give no rain cover
+  if(!view||version!=="public") return;
+  layers.shade.graphics.forEach(g=>{const k=g.attributes&&g.attributes.kind; g.visible = k==="trees"?LY.trees:LY.covered;});
+  layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr;
+}
+document.querySelectorAll("[data-ly]").forEach(c=>c.onchange=()=>{LY[c.dataset.ly]=c.checked; try{localStorage.setItem("coolhk-layers",JSON.stringify(LY))}catch(e){}; syncPub();});
+$("lyrBtn").onclick=()=>{const p=$("lyrPanel"),open=p.hidden; p.hidden=!open; $("lyrBtn").setAttribute("aria-expanded",open);};
+syncPub();
 // weather setting: switch wording, colours and recalculate the current route
 function applyMode(m,init){
   mode=m; try{localStorage.setItem("coolhk-mode",m)}catch(e){}
@@ -1206,7 +1265,7 @@ function applyMode(m,init){
   $("mostLbl").dataset.i18n=rain?"mostCovered":"mostShaded"; $("mostLbl").style.color=rain?"var(--rain)":"var(--shade)";
   $("lgRSt").dataset.i18n=rain?"lgRouteDry":"lgRouteShade"; $("lgRXt").dataset.i18n=rain?"lgRouteWet":"lgRouteSun";
   $("lgRSi").style.background=rain?"var(--rain)":"var(--shade)"; $("lgRXi").style.background=rain?"var(--wet)":"var(--sunroute)";
-  applyLang();
+  syncPub(); applyLang();
   if(!init && startPoint && destPoint && routes.fast) plan(++reqId);
 }
 document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>applyMode(b.dataset.m));
