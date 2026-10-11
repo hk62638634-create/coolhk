@@ -451,7 +451,7 @@ function drawMTR(){
   if(!layers.mtr) return; layers.mtr.removeAll();
   const byEn=Object.fromEntries(MTR.map(s=>[s.en,s]));
   // each line in its own MTR colour, but thinner and see-through so the walkways and route stay on top
-  const lineSym=code=>({type:"simple-line",color:rgba(LINES[code][2],.6),width:3});
+  const lineSym=code=>({type:"simple-line",color:rgba(LINES[code][2],.35),width:3});
   const linePopup=code=>({title:lang==="zh"?LINES[code][1]:LINES[code][0],content:`<span style="display:inline-block;width:28px;height:5px;border-radius:3px;background:${LINES[code][2]};vertical-align:middle"></span> `+[...new Set(LINE_SEQ[code].flat())].filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")});
   // real track shapes from data/mtr_lines.geojson (built by scripts/build_data.py); straight links if it is not available
   if(MTR_GEO) MTR_GEO.features.forEach(f=>{ const code=f.properties.ref; if(!LINES[code]) return;
