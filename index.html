@@ -151,6 +151,18 @@ select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--line);border
 .chip.wide{font-family:var(--f-body)}
 .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:24px;background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
+/* settings panel */
+.top{position:relative}
+.setpanel{position:absolute;top:calc(100% + 6px);right:10px;z-index:40;width:min(360px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:14px;display:flex;flex-direction:column;gap:10px}
+.setpanel[hidden]{display:none}
+.modecards{display:flex;flex-direction:column;gap:8px}
+.modecard{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit}
+.modecard b{font-size:15px}
+.modecard span{font-size:13px;color:var(--muted);line-height:1.45}
+.modecard[data-m="sun"][aria-pressed="true"]{border-color:var(--sunroute);background:#fff1dc}
+.modecard[data-m="rain"][aria-pressed="true"]{border-color:var(--rain);background:#e4eefc}
+.modechip{align-self:flex-start;display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.modechip .chg{color:var(--cool)}
 /* map layer picker */
 .lyr{position:absolute;top:10px;right:10px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 #app[data-layout="desktop"] .lyr{top:118px}
@@ -207,7 +219,17 @@ body.framed-bg{background:#cfd8db}
     </div>
     <span class="spacer"></span>
     <button class="iconbtn" id="layoutBtn" title="Phone / computer view"></button>
+    <button class="iconbtn" id="setBtn" aria-expanded="false" aria-controls="setPanel" data-i18n="setBtn">⚙️ Settings</button>
     <button class="iconbtn" id="langBtn">中文</button>
+    <div class="setpanel" id="setPanel" role="dialog" aria-labelledby="setTitle" hidden>
+      <h3 id="setTitle" data-i18n="setTitle">Walking weather</h3>
+      <p class="hint" style="margin:0" data-i18n="setHint">Choose what your route should protect you from.</p>
+      <div class="modecards" id="modeSeg" role="group" aria-labelledby="setTitle">
+        <button type="button" class="modecard" data-m="sun" aria-pressed="true"><b data-i18n="modeSun">☀️ Sunny</b><span data-i18n="sunDesc">Avoid the sun.</span></button>
+        <button type="button" class="modecard" data-m="rain" aria-pressed="false"><b data-i18n="modeRain">🌧 Rainy</b><span data-i18n="rainDesc">Stay dry.</span></button>
+      </div>
+      <button type="button" class="btn small" id="setDone" style="align-self:flex-end" data-i18n="setDone">Done</button>
+    </div>
   </header>
 
   <div class="body">
@@ -221,7 +243,7 @@ body.framed-bg{background:#cfd8db}
             <h2 id="pubTitleEl" data-i18n="pubTitle">Walk in the shade</h2>
             <p class="hint" data-i18n="pubHint">Type where you're going. Leave the start empty to use your current location.</p>
           </div>
-          <div class="seg mode" id="modeSeg" role="group" aria-label="Weather"><button type="button" data-m="sun" aria-pressed="true" data-i18n="modeSun">☀️ Sunny</button><button type="button" data-m="rain" aria-pressed="false" data-i18n="modeRain">🌧 Rainy</button></div>
+          <button type="button" class="modechip" id="modeChip" aria-controls="setPanel"><span id="modeChipT" data-i18n="modeChipSun">☀️ Sunny mode</span><span class="chg" data-i18n="modeChange">Change</span></button>
           <div id="heatAlert"></div>
           <form class="trip" id="tripForm" autocomplete="off">
             <span class="dot" style="background:var(--heat)"></span>
@@ -430,7 +452,7 @@ const T = {
   proOnly:"Government Pro feature",upgradeMsg:"Upgrade to Government Pro to see where to deploy cooling units, view public demand and export reports.",upgrade:"Upgrade to Pro (demo)",
   exportBtn:"Export priority list (CSV)",unitCool:"Mobile cooling unit",unitWater:"Hydration station",at:"at",
   deployLine:(n,m,s,t)=>`${n} at-risk people · ${m} min from ${s} · surface ${t}°C`,noDesert:"No desert areas in this district.",
-  atRisk:"at risk",score:"score",min:"min",shaded:"shaded",inSun:"min in sun",covered:"covered",inRain:"min in the rain",modeSun:"☀️ Sunny",modeRain:"🌧 Rainy",pubTitleRain:"Stay dry on your walk",goRain:"Find the driest route",mostCovered:"Most covered",lgRouteDry:"Route: covered",lgRouteWet:"Route: in the rain",sameRouteRain:"The fastest route already uses the covered walkways nearby, so it is also the driest.",noShadeRain:"No covered walkway lies along this trip, so you will be in the rain for most of it.",shadeBetterRain:(x,s)=>`The covered route takes ${x} min longer but saves ${s} min in the rain.`,
+  atRisk:"at risk",score:"score",min:"min",shaded:"shaded",inSun:"min in sun",covered:"covered",inRain:"min in the rain",modeSun:"☀️ Sunny",modeRain:"🌧 Rainy",setBtn:"⚙️ Settings",setTitle:"Walking weather",setHint:"Choose what your route should protect you from.",sunDesc:"Avoid the sun. Covered walkways, footbridges, tree-lined streets and air-conditioned shelters all count as shade. On the map: green = shaded, orange = in the sun.",rainDesc:"Stay dry. Only covered walkways, footbridges and indoor links count, because trees don't keep the rain off. On the map: blue = covered, grey = in the rain.",setDone:"Done",modeChipSun:"☀️ Sunny mode",modeChipRain:"🌧 Rainy mode",modeChange:"Change",pubTitleRain:"Stay dry on your walk",goRain:"Find the driest route",mostCovered:"Most covered",lgRouteDry:"Route: covered",lgRouteWet:"Route: in the rain",sameRouteRain:"The fastest route already uses the covered walkways nearby, so it is also the driest.",noShadeRain:"No covered walkway lies along this trip, so you will be in the rain for most of it.",shadeBetterRain:(x,s)=>`The covered route takes ${x} min longer but saves ${s} min in the rain.`,
   locating:"Finding your location…",searching:"Searching…",routing:"Finding the shadiest way…",
   noGeo:"Couldn't get your location, so we used a sample start at Victoria Park. Type a start point to change it.",
   notFound:q=>`Couldn't find "${q}". Try a building, MTR station or street name.`,
@@ -467,7 +489,7 @@ const T = {
   proOnly:"政府專業版功能",upgradeMsg:"升級至政府專業版，即可查看降溫站部署建議、公眾需求數據及匯出報告。",upgrade:"升級至專業版（示範）",
   exportBtn:"匯出優先名單（CSV）",unitCool:"流動降溫站",unitWater:"補水站",at:"於",
   deployLine:(n,m,s,t)=>`${n} 名高風險人士 · 距${s} ${m} 分鐘 · 地表 ${t}°C`,noDesert:"此地區沒有避暑沙漠。",
-  atRisk:"高風險",score:"分數",min:"分鐘",shaded:"有遮蔭",inSun:"分鐘曬太陽",covered:"有上蓋",inRain:"分鐘淋雨",modeSun:"☀️ 晴天",modeRain:"🌧 落雨",pubTitleRain:"行有瓦遮頭路線",goRain:"搵最少淋雨路線",mostCovered:"最多上蓋",lgRouteDry:"路線：有上蓋",lgRouteWet:"路線：會淋雨",sameRouteRain:"最快路線已經用到附近的有蓋通道，所以亦是最少淋雨的路線。",noShadeRain:"此行程沿途沒有有蓋通道，大部分路段都會淋雨。",shadeBetterRain:(x,s)=>`有蓋路線多行 ${x} 分鐘，但少淋 ${s} 分鐘雨。`,
+  atRisk:"高風險",score:"分數",min:"分鐘",shaded:"有遮蔭",inSun:"分鐘曬太陽",covered:"有上蓋",inRain:"分鐘淋雨",modeSun:"☀️ 晴天",modeRain:"🌧 落雨",setBtn:"⚙️ 設定",setTitle:"步行天氣",setHint:"選擇路線要幫你避開甚麼。",sunDesc:"避開太陽。有蓋行人道、天橋、樹蔭街道和冷氣避暑點都算有遮蔭。地圖上：綠色＝有遮蔭，橙色＝日曬。",rainDesc:"避免淋雨。只計算有蓋行人道、天橋和室內通道，因為樹蔭擋不到雨。地圖上：藍色＝有上蓋，灰色＝會淋雨。",setDone:"完成",modeChipSun:"☀️ 晴天模式",modeChipRain:"🌧 落雨模式",modeChange:"更改",pubTitleRain:"行有瓦遮頭路線",goRain:"搵最少淋雨路線",mostCovered:"最多上蓋",lgRouteDry:"路線：有上蓋",lgRouteWet:"路線：會淋雨",sameRouteRain:"最快路線已經用到附近的有蓋通道，所以亦是最少淋雨的路線。",noShadeRain:"此行程沿途沒有有蓋通道，大部分路段都會淋雨。",shadeBetterRain:(x,s)=>`有蓋路線多行 ${x} 分鐘，但少淋 ${s} 分鐘雨。`,
   locating:"正在取得你的位置…",searching:"搜尋中…",routing:"正在搵最陰涼的路…",
   noGeo:"未能取得你的位置，已用維多利亞公園作示範起點。輸入起點即可更改。",
   notFound:q=>`搵唔到「${q}」。試吓輸入大廈、港鐵站或街道名稱。`,
@@ -1274,10 +1296,18 @@ function applyMode(m,init){
   $("mostLbl").dataset.i18n=rain?"mostCovered":"mostShaded"; $("mostLbl").style.color=rain?"var(--rain)":"var(--shade)";
   $("lgRSt").dataset.i18n=rain?"lgRouteDry":"lgRouteShade"; $("lgRXt").dataset.i18n=rain?"lgRouteWet":"lgRouteSun";
   $("lgRSi").style.background=rain?"var(--rain)":"var(--shade)"; $("lgRXi").style.background=rain?"var(--wet)":"var(--sunroute)";
+  $("modeChipT").dataset.i18n=rain?"modeChipRain":"modeChipSun";
   syncPub(); applyLang();
   if(!init && startPoint && destPoint && routes.fast) plan(++reqId);
 }
 document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>applyMode(b.dataset.m));
+// settings panel (the walking-weather choice lives here)
+function openSettings(open){ $("setPanel").hidden=!open; $("setBtn").setAttribute("aria-expanded",open); }
+$("setBtn").onclick=()=>openSettings($("setPanel").hidden);
+$("modeChip").onclick=()=>openSettings(true);
+$("setDone").onclick=()=>openSettings(false);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") openSettings(false); });
+document.addEventListener("click",e=>{ if(!$("setPanel").hidden && !e.target.closest("#setPanel,#setBtn,#modeChip")) openSettings(false); });
 applyMode(mode,true);
 loadWeather().then(()=>renderWeather());
 loadExits();
