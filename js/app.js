@@ -15,7 +15,7 @@ function shadeStats(coords){
   let tot=0,sh=0;const used=new Set();
   for(let i=0;i<coords.length-1;i++){
     const a=coords[i],b=coords[i+1],L=dist(a,b),m=[(a[0]+b[0])/2,(a[1]+b[1])/2];tot+=L;let hit=false;
-    SHADE.forEach((s,k)=>{if(coversNow(s)&&lineDist(m,s.pts)<35){hit=true;used.add(k)}});
+    SHADE.forEach((s,k)=>{if(coversNow(s)&&nearBB(m,s)&&lineDist(m,s.pts)<35){hit=true;used.add(k)}});
     if(!hit&&mode!=="rain"&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))hit=true;
     if(hit)sh+=L;
   }
@@ -24,15 +24,18 @@ function shadeStats(coords){
 // weather setting: "sun" (avoid the sun) or "rain" (stay dry). Trees give shade but no rain cover.
 let mode="sun"; try{mode=localStorage.getItem("coolhk-mode")==="rain"?"rain":"sun"}catch(e){}
 const coversNow=s=>mode!=="rain"||s.kind!=="trees";
+// quick bounding-box test so thousands of real walkways stay fast to check
+const nearBB=(p,s,pad=.0005)=>{const b=s.bb||(s.bb=s.pts.reduce((a,q)=>[Math.min(a[0],q[0]),Math.min(a[1],q[1]),Math.max(a[2],q[0]),Math.max(a[3],q[1])],[90,180,-90,-180]));return p[0]>b[0]-pad&&p[0]<b[2]+pad&&p[1]>b[1]-pad&&p[1]<b[3]+pad};
+const segLen=s=>s.len??(s.len=s.pts.slice(1).reduce((a,q,i)=>a+dist(s.pts[i],q),0));
 const coveredCol=()=>css(mode==="rain"?"--rain":"--shade"), exposedCol=()=>css(mode==="rain"?"--wet":"--sunroute");
 const tm=k=>mode==="rain"?k+"Rain":k;
 // is this stretch of the route covered? (same test as shadeStats)
-function segShaded(a,b){const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];return SHADE.some(s=>coversNow(s)&&lineDist(m,s.pts)<35)||(mode!=="rain"&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))}
+function segShaded(a,b){const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];return SHADE.some(s=>coversNow(s)&&nearBB(m,s)&&lineDist(m,s.pts)<35)||(mode!=="rain"&&SHELTERS.some(s=>dist(m,[s.lat,s.lng])<70))}
 // split a route into continuous shaded / sunny runs
 function shadeRuns(coords){const runs=[];for(let i=0;i<coords.length-1;i++){const sh=segShaded(coords[i],coords[i+1]),last=runs.at(-1);if(last&&last.shaded===sh)last.pts.push(coords[i+1]);else runs.push({shaded:sh,pts:[coords[i],coords[i+1]]})}return runs}
 function shadeWaypoints(a,b){
   const AB=dist(a,b),corr=Math.max(250,AB*.35),c=[];
-  SHADE.forEach((s,k)=>{if(!coversNow(s))return;const f=s.pts[0],l=s.pts.at(-1),pf=along(f,a,b),pl=along(l,a,b),pm=along(s.pts[Math.floor(s.pts.length/2)],a,b);
+  SHADE.forEach((s,k)=>{if(!coversNow(s)||segLen(s)<60)return;const f=s.pts[0],l=s.pts.at(-1),pf=along(f,a,b),pl=along(l,a,b),pm=along(s.pts[Math.floor(s.pts.length/2)],a,b);
     if(pm.s>-.1&&pm.s<1.1&&Math.min(pf.d,pl.d,pm.d)<corr)c.push({k,d:Math.min(pf.d,pl.d,pm.d),s:pm.s,pts:pf.s<=pl.s?[f,l]:[l,f]})});
   return c.sort((x,y)=>x.d-y.d).slice(0,2).sort((x,y)=>x.s-y.s);
 }
@@ -446,6 +449,15 @@ const LINE_SEQ={
 };
 // real MTR track shapes, prepared ahead of time by scripts/build_data.py (GitHub Actions, weekly)
 let MTR_GEO=null;
+// real covered walkways, footbridges, subways and indoor links (data/shade.geojson, built by scripts/build_data.py)
+async function loadShadeGeo(){ try{
+  const r=await fetch("data/shade.geojson",{cache:"no-cache"}); if(!r.ok) return; const j=await r.json();
+  const real=j.features.filter(f=>f.geometry&&f.geometry.coordinates.length>1).map(f=>{const p=f.properties||{},indoor=p.kind==="indoor";
+    return {en:p.en||(indoor?"Indoor link":"Covered walkway"),zh:p.zh||(indoor?"室內通道":"有蓋行人道"),kind:indoor?"indoor":"covered",pts:f.geometry.coordinates.map(([x,y])=>[y,x])};});
+  if(real.length<50) return;
+  const trees=SHADE.filter(s=>s.kind==="trees"); SHADE.length=0; SHADE.push(...real,...trees); // keep the sample tree-lined streets
+  if(view){ drawShade(); syncPub(); if(routes.fast&&startPoint&&destPoint) plan(++reqId); }
+}catch(e){} }
 async function loadMtrGeo(){ try{ const r=await fetch("data/mtr_lines.geojson",{cache:"no-cache"}); if(r.ok){ MTR_GEO=await r.json(); if(view) drawMTR(); } }catch(e){} }
 function drawMTR(){
   if(!layers.mtr) return; layers.mtr.removeAll();
@@ -546,7 +558,7 @@ function straight(points){
 }
 const getRoute=async pts=>{try{return await osrm(pts)}catch(e){return straight(pts)}};
 async function plan(id){
-  $("status").textContent=t("routing");
+  $("status").textContent=t(tm("routing"));
   const a=[startPoint.lat,startPoint.lng], b=[destPoint.lat,destPoint.lng], wps=shadeWaypoints(a,b);
   const [fast,shadeR]=await Promise.all([getRoute([a,b]), wps.length?getRoute([a,...wps.flatMap(w=>w.pts),b]):null]);
   if(id!==reqId) return;
@@ -580,7 +592,7 @@ function renderRoutes(zoom){
   const same=shade===fast, extra=(shade.meters-fast.meters)/WALK, saved=(fast.meters*(1-fast.stats.pct)-shade.meters*(1-shade.stats.pct))/WALK;
   $("status").textContent=(same?(fast.stats.used.length?t(tm("sameRoute")):t(tm("noShade"))):t(tm("shadeBetter"),Math.max(0,extra).toFixed(0),Math.max(0,saved).toFixed(0)))+(main.live?"":t("offline"));
   const used=main.stats.used; $("shadeBox").hidden=false;
-  $("shadeList").innerHTML=used.length?used.map(k=>`<li><button class="row" data-s="${k}"><span class="stripe" style="background:${shadeCol(SHADE[k].kind)}"></span><span><span class="name">${nm(SHADE[k])}</span><br><span class="sub">${shadeLabel(SHADE[k].kind)}</span></span><span class="num"></span></button></li>`).join(""):`<li class="hint">${t("noShadeList")}</li>`;
+  $("shadeList").innerHTML=used.length?[...new Map(used.map(k=>[nm(SHADE[k])+"|"+SHADE[k].kind,k])).values()].map(k=>`<li><button class="row" data-s="${k}"><span class="stripe" style="background:${shadeCol(SHADE[k].kind)}"></span><span><span class="name">${nm(SHADE[k])}</span><br><span class="sub">${shadeLabel(SHADE[k].kind)}</span></span><span class="num"></span></button></li>`).join(""):`<li class="hint">${t(tm("noShadeList"))}</li>`;
   const near=nearestShelters([startPoint.lat,startPoint.lng],4).filter(x=>x.s!==destPoint).slice(0,3);
   $("nearBox").hidden=false;
   $("nearList").innerHTML=near.map(({s,d})=>`<li><button class="row" data-n="${SHELTERS.indexOf(s)}"><span class="stripe" style="background:var(--cool)"></span><span><span class="name">${nm(s)}</span><br><span class="sub">${lang==="zh"?TYPE[s.type]:s.type} · ${lang==="zh"?D[s.dist]:s.dist}</span></span><span class="num">~${walkMin(d).toFixed(0)} ${t("min")}</span></button></li>`).join("");
@@ -701,7 +713,7 @@ function applyMode(m,init){
   mode=m; try{localStorage.setItem("coolhk-mode",m)}catch(e){}
   const rain=m==="rain"; $("app").classList.toggle("rain",rain);
   document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
-  $("pubTitleEl").dataset.i18n=rain?"pubTitleRain":"pubTitle"; $("pubHintEl").dataset.i18n=rain?"pubHintRain":"pubHint"; $("goBtn").dataset.i18n=rain?"goRain":"go";
+  $("pubTitleEl").dataset.i18n=rain?"pubTitleRain":"pubTitle"; $("shadeHd").dataset.i18n=rain?"shadeOnRouteRain":"shadeOnRoute"; $("pubHintEl").dataset.i18n=rain?"pubHintRain":"pubHint"; $("goBtn").dataset.i18n=rain?"goRain":"go";
   $("mostLbl").dataset.i18n=rain?"mostCovered":"mostShaded"; $("mostLbl").style.color=rain?"var(--rain)":"var(--shade)";
   $("lgRSt").dataset.i18n=rain?"lgRouteDry":"lgRouteShade"; $("lgRXt").dataset.i18n=rain?"lgRouteWet":"lgRouteSun";
   $("lgRSi").style.background=rain?"var(--rain)":"var(--shade)"; $("lgRXi").style.background=rain?"var(--wet)":"var(--sunroute)";
@@ -721,3 +733,4 @@ applyMode(mode,true);
 loadWeather().then(()=>renderWeather());
 loadExits();
 loadMtrGeo();
+loadShadeGeo();
