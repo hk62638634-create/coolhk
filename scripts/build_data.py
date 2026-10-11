@@ -5,7 +5,8 @@ Downloads from OpenStreetMap (Overpass API), simplifies and writes:
   data/mtr_lines.geojson  real MTR track shapes (instead of straight lines between stations)
   data/shade.geojson      covered walkways, covered footbridges, pedestrian subways and indoor links
 
-GitHub Actions runs this every week (.github/workflows/update-data.yml).
+Nothing runs automatically. Run it by hand when you want fresh data:
+Actions tab → Update map data → Run workflow (or: python scripts/build_data.py).
 
 Uses only the Python standard library. If OpenStreetMap is busy or returns too little,
 the script stops without touching the existing data file, so the website keeps working.
