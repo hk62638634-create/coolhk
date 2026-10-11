@@ -459,10 +459,10 @@ function drawMTR(){
     layers.mtr.add(new Graphic({geometry:pline(pts),symbol:lineSym(code),
       popupTemplate:{title:lang==="zh"?LINES[code][1]:LINES[code][0],content:`<span style="display:inline-block;width:28px;height:5px;border-radius:3px;background:${LINES[code][2]};vertical-align:middle"></span> `+names.filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")}}));
   }));
-  // small station dots on the lines (bigger for interchanges); tap one for its lines and exits
+  // small station dots on the lines, all the same size; tap one for its lines and exits
   if(layers.mtrst){ layers.mtrst.removeAll();
     MTR.forEach(s=>layers.mtrst.add(new Graphic({geometry:pt(s.lat,s.lng),
-      symbol:{type:"simple-marker",color:"#ffffff",size:s.lines.length>1?8:6,outline:{color:[90,104,112,.9],width:1.5}},
+      symbol:{type:"simple-marker",color:"#ffffff",size:7,outline:{color:[90,104,112,.9],width:1.5}},
       popupTemplate:{title:stLabel(s),content:s.lines.map(l=>`<span style="display:inline-block;width:18px;height:5px;border-radius:3px;background:${LINES[l][2]};vertical-align:middle;margin-right:4px"></span>${lang==="zh"?LINES[l][1]:LINES[l][0]}`).join("<br>")+(s.exits&&s.exits.length?`<br>${t("exitsLbl")}: ${s.exits.map(x=>x.ref).join(", ")}`:"")}}))); }
   // station names when zoomed in to street level
   if(layers.mtrlab){ layers.mtrlab.removeAll();
@@ -700,7 +700,7 @@ function applyMode(m,init){
   mode=m; try{localStorage.setItem("coolhk-mode",m)}catch(e){}
   const rain=m==="rain"; $("app").classList.toggle("rain",rain);
   document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
-  $("pubTitleEl").dataset.i18n=rain?"pubTitleRain":"pubTitle"; $("goBtn").dataset.i18n=rain?"goRain":"go";
+  $("pubTitleEl").dataset.i18n=rain?"pubTitleRain":"pubTitle"; $("pubHintEl").dataset.i18n=rain?"pubHintRain":"pubHint"; $("goBtn").dataset.i18n=rain?"goRain":"go";
   $("mostLbl").dataset.i18n=rain?"mostCovered":"mostShaded"; $("mostLbl").style.color=rain?"var(--rain)":"var(--shade)";
   $("lgRSt").dataset.i18n=rain?"lgRouteDry":"lgRouteShade"; $("lgRXt").dataset.i18n=rain?"lgRouteWet":"lgRouteSun";
   $("lgRSi").style.background=rain?"var(--rain)":"var(--shade)"; $("lgRXi").style.background=rain?"var(--wet)":"var(--sunroute)";
