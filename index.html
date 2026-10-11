@@ -21,13 +21,31 @@
     <span class="spacer"></span>
     <button class="iconbtn" id="layoutBtn" title="Phone / computer view"></button>
     <button class="iconbtn" id="setBtn" aria-expanded="false" aria-controls="setPanel" data-i18n="setBtn">⚙️ Settings</button>
-    <button class="iconbtn" id="langBtn">中文</button>
     <div class="setpanel" id="setPanel" role="dialog" aria-labelledby="setTitle" hidden>
       <h3 id="setTitle" data-i18n="setTitle">Walking weather</h3>
       <p class="hint" style="margin:0" data-i18n="setHint">Choose what your route should protect you from.</p>
       <div class="modecards" id="modeSeg" role="group" aria-labelledby="setTitle">
         <button type="button" class="modecard" data-m="sun" aria-pressed="true"><b data-i18n="modeSun">☀️ Sunny</b><span data-i18n="sunDesc">Avoid the sun.</span></button>
         <button type="button" class="modecard" data-m="rain" aria-pressed="false"><b data-i18n="modeRain">🌧 Rainy</b><span data-i18n="rainDesc">Stay dry.</span></button>
+      </div>
+      <h3 class="sethd" data-i18n="setMap">Map style</h3>
+      <div class="opts" id="bmaps" role="group">
+        <button type="button" data-b="hk" aria-pressed="true" data-i18n="bmHK">HK Map (LandsD)</button>
+        <button type="button" data-b="topo" aria-pressed="false" data-i18n="bmTopo">Topographic</button>
+        <button type="button" data-b="hybrid" aria-pressed="false" data-i18n="bmImg">Imagery</button>
+      </div>
+      <h3 class="sethd" data-i18n="setLayers">Map layers</h3>
+      <div class="lyrpanel" id="lyrPanel">
+        <label><input type="checkbox" data-ly="covered" checked><i class="ln" style="background:var(--covered)"></i><span data-i18n="lyCovered">Covered walkways &amp; footbridges</span></label>
+        <label id="lyTreesRow"><input type="checkbox" data-ly="trees" checked><i class="ln" style="background:var(--tree)"></i><span data-i18n="lyTrees">Tree-lined streets</span></label>
+        <label><input type="checkbox" data-ly="shelters" checked><i class="pt" style="background:var(--cool)"></i><span data-i18n="lyShelters">Cool shelters</span></label>
+        <label><input type="checkbox" data-ly="walk"><i class="pg"></i><span data-i18n="lyWalk">5 / 10-min walk to a shelter</span></label>
+        <label><input type="checkbox" data-ly="mtr" checked><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E);opacity:.6"></i><span data-i18n="lyMtr">MTR lines</span></label>
+      </div>
+      <h3 class="sethd" data-i18n="setLang">Language</h3>
+      <div class="opts" id="langSeg" role="group">
+        <button type="button" data-lang="zh" lang="zh-Hant-HK">中文</button>
+        <button type="button" data-lang="en" lang="en">English</button>
       </div>
       <button type="button" class="btn small" id="setDone" style="align-self:flex-end" data-i18n="setDone">Done</button>
     </div>
@@ -41,8 +59,8 @@
         <!-- ============ PUBLIC ============ -->
         <section id="panel-public" style="display:flex;flex-direction:column;gap:14px">
           <div>
-            <h2 id="pubTitleEl" data-i18n="pubTitle">Where are you going?</h2>
-            <p class="hint" id="pubHintEl" data-i18n="pubHint">We'll find you a way with more shade. Leave “From” blank to start from where you are.</p>
+            <h2 id="pubTitleEl" data-i18n="pubTitle">Which way is coolest?</h2>
+            <p class="hint" id="pubHintEl" data-i18n="pubHint">Tell us where you're going and we'll find a way with more shade. Leave “From” blank to start where you are.</p>
           </div>
           <button type="button" class="modechip" id="modeChip" aria-controls="setPanel"><span id="modeChipT" data-i18n="modeChipSun">☀️ Sunny mode</span><span class="chg" data-i18n="modeChange">Change</span></button>
           <div id="heatAlert"></div>
@@ -197,21 +215,6 @@
       <div id="map"></div>
       <div class="maploading" id="mapLoading"><span>Loading map…</span></div>
       <div class="wx" id="wx"><span class="where">…</span></div>
-      <div class="bmaps" id="bmaps">
-        <button data-b="hk" aria-pressed="true" data-i18n="bmHK">HK Map (LandsD)</button>
-        <button data-b="topo" aria-pressed="false" data-i18n="bmTopo">Topographic</button>
-        <button data-b="hybrid" aria-pressed="false" data-i18n="bmImg">Imagery</button>
-      </div>
-      <div class="lyr" id="lyr">
-        <button type="button" class="lyrbtn" id="lyrBtn" aria-expanded="false" aria-controls="lyrPanel" data-i18n="lyrBtn">🗂 Layers</button>
-        <div class="lyrpanel" id="lyrPanel" hidden>
-          <label><input type="checkbox" data-ly="covered" checked><i class="ln" style="background:var(--covered)"></i><span data-i18n="lyCovered">Covered walkways &amp; footbridges</span></label>
-          <label id="lyTreesRow"><input type="checkbox" data-ly="trees" checked><i class="ln" style="background:var(--tree)"></i><span data-i18n="lyTrees">Tree-lined streets</span></label>
-          <label><input type="checkbox" data-ly="shelters" checked><i class="pt" style="background:var(--cool)"></i><span data-i18n="lyShelters">Cool shelters</span></label>
-          <label><input type="checkbox" data-ly="walk"><i class="pg"></i><span data-i18n="lyWalk">5 / 10-min walk to a shelter</span></label>
-          <label><input type="checkbox" data-ly="mtr" checked><i class="ln" style="background:linear-gradient(90deg,#E2231A,#007DC5,#00AB4E);opacity:.6"></i><span data-i18n="lyMtr">MTR lines</span></label>
-        </div>
-      </div>
       <div class="toast" id="toast"></div>
     </div>
   </div>
