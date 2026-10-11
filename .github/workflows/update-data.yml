@@ -1,13 +1,9 @@
 name: Update map data
 
+# Manual only: nothing updates automatically.
+# To refresh the data, open the Actions tab → Update map data → Run workflow.
 on:
-  schedule:
-    - cron: "0 3 * * 1"   # every Monday 03:00 UTC (11:00 Hong Kong time)
-  workflow_dispatch:       # "Run workflow" button in the Actions tab
-  push:
-    paths:
-      - "scripts/build_data.py"
-      - ".github/workflows/update-data.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
