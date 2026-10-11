@@ -163,9 +163,10 @@ require(["esri/config","esri/Map","esri/WebMap","esri/views/MapView","esri/Basem
   if(CONFIG.ARCGIS_API_KEY) esriConfig.apiKey = CONFIG.ARCGIS_API_KEY;
 
   const map = CONFIG.WEBMAP_ID ? new WebMap({portalItem:{id:CONFIG.WEBMAP_ID}}) : new EsriMap({basemap:makeBasemap("hk")});
-  ["lst","catch","walk","demand","areas","shade","shelters","mtr","mtrlab","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
+  ["lst","catch","walk","demand","areas","shade","shelters","mtr","mtrst","mtrlab","route","exits","deploy"].forEach(k=>{layers[k]=new GraphicsLayer({id:k});});
+  layers.mtrst.minScale=150000; // station dots from district level
   layers.mtrlab.minScale=20000; // station names only at street level
-  map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.mtrlab,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
+  map.addMany([layers.lst,layers.catch,layers.walk,layers.demand,layers.mtr,layers.shade,layers.mtrst,layers.mtrlab,layers.areas,layers.shelters,layers.route,layers.exits,layers.deploy]);
 
   view = new MapView({container:"map",map,center:[114.18,22.30],zoom:13,
     constraints:{minZoom:10,maxZoom:19,snapToZoom:false},
@@ -458,7 +459,12 @@ function drawMTR(){
     layers.mtr.add(new Graphic({geometry:pline(pts),symbol:{type:"simple-line",color:[110,122,130,.55],width:2},
       popupTemplate:{title:lang==="zh"?LINES[code][1]:LINES[code][0],content:`<span style="display:inline-block;width:28px;height:5px;border-radius:3px;background:${LINES[code][2]};vertical-align:middle"></span> `+names.filter(n=>byEn[n]).map(n=>nm(byEn[n])).join(" · ")}}));
   }));
-  // station names (text only, no dots) when zoomed in to street level
+  // small station dots on the lines (bigger for interchanges); tap one for its lines and exits
+  if(layers.mtrst){ layers.mtrst.removeAll();
+    MTR.forEach(s=>layers.mtrst.add(new Graphic({geometry:pt(s.lat,s.lng),
+      symbol:{type:"simple-marker",color:"#ffffff",size:s.lines.length>1?8:6,outline:{color:[90,104,112,.9],width:1.5}},
+      popupTemplate:{title:stLabel(s),content:s.lines.map(l=>`<span style="display:inline-block;width:18px;height:5px;border-radius:3px;background:${LINES[l][2]};vertical-align:middle;margin-right:4px"></span>${lang==="zh"?LINES[l][1]:LINES[l][0]}`).join("<br>")+(s.exits&&s.exits.length?`<br>${t("exitsLbl")}: ${s.exits.map(x=>x.ref).join(", ")}`:"")}}))); }
+  // station names when zoomed in to street level
   if(layers.mtrlab){ layers.mtrlab.removeAll();
     MTR.forEach(s=>layers.mtrlab.add(new Graphic({geometry:pt(s.lat,s.lng),symbol:{type:"text",text:stLabel(s),color:"#4a5b63",haloColor:"#ffffff",haloSize:1.5,font:{size:11,weight:"bold"}}}))); }
   drawSelExits();
@@ -663,7 +669,7 @@ function show(v){
   if(!view) return;
   view.closePopup&&view.closePopup();
   const pub=v==="public";
-  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true; layers.walk.visible=false; layers.mtr.visible=true; layers.mtrlab.visible=true;
+  layers.route.visible=pub; layers.shade.visible=pub; layers.shelters.visible=true; layers.walk.visible=false; layers.mtr.visible=true; layers.mtrst.visible=true; layers.mtrlab.visible=true;
   ["lst","catch","demand","areas","deploy"].forEach(k=>layers[k].visible=!pub);
   if(pub){ layers.catch.removeAll(); if(routes.fast) renderRoutes(true); syncPub(); }
   else { renderPremium(); }
@@ -684,7 +690,7 @@ function syncPub(){
   $("lyTreesRow").classList.toggle("dim",mode==="rain"); // trees give no rain cover
   if(!view||version!=="public") return;
   layers.shade.graphics.forEach(g=>{const k=g.attributes&&g.attributes.kind; g.visible = k==="trees"?LY.trees:LY.covered;});
-  layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr; layers.mtrlab.visible=LY.mtr;
+  layers.shelters.visible=LY.shelters; layers.walk.visible=LY.walk; layers.mtr.visible=LY.mtr; layers.mtrst.visible=LY.mtr; layers.mtrlab.visible=LY.mtr;
 }
 document.querySelectorAll("[data-ly]").forEach(c=>c.onchange=()=>{LY[c.dataset.ly]=c.checked; try{localStorage.setItem("coolhk-layers",JSON.stringify(LY))}catch(e){}; syncPub();});
 $("lyrBtn").onclick=()=>{const p=$("lyrPanel"),open=p.hidden; p.hidden=!open; $("lyrBtn").setAttribute("aria-expanded",open);};
